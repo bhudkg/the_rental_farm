@@ -106,3 +106,20 @@ def get_order(db: Session, order_id: uuid.UUID) -> Order | None:
 
 def get_all_orders(db: Session) -> list[Order]:
     return db.query(Order).order_by(Order.created_at.desc()).all()
+
+
+# ── Owner Trees ──
+
+def get_trees_by_owner(db: Session, owner_id: uuid.UUID) -> list[Tree]:
+    return db.query(Tree).filter(Tree.owner_id == owner_id).order_by(Tree.created_at.desc()).all()
+
+
+def get_orders_for_owner_trees(db: Session, owner_id: uuid.UUID) -> list[Order]:
+    """Get all orders placed on trees owned by this user."""
+    return (
+        db.query(Order)
+        .join(Tree, Order.tree_id == Tree.id)
+        .filter(Tree.owner_id == owner_id)
+        .order_by(Order.created_at.desc())
+        .all()
+    )

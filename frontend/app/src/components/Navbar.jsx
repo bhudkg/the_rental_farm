@@ -1,26 +1,43 @@
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import useStore from '../store/useStore';
 
 export default function Navbar() {
   const location = useLocation();
-  const { token, logout } = useStore();
+  const navigate = useNavigate();
+  const { token, user, logout } = useStore();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const links = [
+  const isOwner = user?.role === 'owner';
+  const onOwnerPages = location.pathname.startsWith('/owner');
+
+  const renterLinks = [
     { to: '/', label: 'Home' },
     { to: '/trees', label: 'Browse Trees' },
-    { to: '/orders', label: 'My Orders' },
+    ...(token ? [{ to: '/orders', label: 'My Orders' }] : []),
   ];
 
+  const ownerLinks = [
+    { to: '/owner', label: 'Dashboard' },
+    { to: '/owner/trees', label: 'My Trees' },
+    { to: '/owner/trees/new', label: 'Add Tree' },
+  ];
+
+  const links = token && isOwner && onOwnerPages ? ownerLinks : renterLinks;
+
   const isActive = (path) => location.pathname === path;
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
 
   return (
     <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 font-bold text-xl text-primary">
+          <Link to={token && isOwner ? '/owner' : '/'} className="flex items-center gap-2 font-bold text-xl text-primary">
             <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
@@ -42,13 +59,34 @@ export default function Navbar() {
                 {l.label}
               </Link>
             ))}
-            {token ? (
-              <button
-                onClick={logout}
-                className="ml-2 px-4 py-2 text-sm font-medium text-gray-600 hover:text-red-600 transition-colors"
+
+            {/* View switcher for owners */}
+            {token && isOwner && (
+              <Link
+                to={onOwnerPages ? '/trees' : '/owner'}
+                className="ml-1 px-3 py-1.5 text-xs font-semibold rounded-full border transition-colors border-gray-200 hover:border-primary hover:text-primary text-gray-500"
               >
-                Logout
-              </button>
+                {onOwnerPages ? 'Browse as Renter' : 'Owner Dashboard'}
+              </Link>
+            )}
+
+            {token ? (
+              <div className="flex items-center gap-2 ml-2">
+                <span className="text-xs text-gray-400 hidden lg:block">
+                  {user?.name}
+                  <span className={`ml-1.5 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${
+                    isOwner ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
+                  }`}>
+                    {user?.role}
+                  </span>
+                </span>
+                <button
+                  onClick={handleLogout}
+                  className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-red-600 transition-colors"
+                >
+                  Logout
+                </button>
+              </div>
             ) : (
               <Link
                 to="/login"
@@ -90,6 +128,31 @@ export default function Navbar() {
               {l.label}
             </Link>
           ))}
+          {token && isOwner && (
+            <Link
+              to={onOwnerPages ? '/trees' : '/owner'}
+              onClick={() => setMobileOpen(false)}
+              className="block px-4 py-2 rounded-lg text-sm font-medium mt-1 text-gray-500"
+            >
+              {onOwnerPages ? 'Browse as Renter' : 'Owner Dashboard'}
+            </Link>
+          )}
+          {token ? (
+            <button
+              onClick={() => { handleLogout(); setMobileOpen(false); }}
+              className="block w-full text-left px-4 py-2 rounded-lg text-sm font-medium mt-1 text-red-600"
+            >
+              Logout
+            </button>
+          ) : (
+            <Link
+              to="/login"
+              onClick={() => setMobileOpen(false)}
+              className="block px-4 py-2 rounded-lg text-sm font-medium mt-1 text-primary"
+            >
+              Sign In
+            </Link>
+          )}
         </div>
       )}
     </nav>

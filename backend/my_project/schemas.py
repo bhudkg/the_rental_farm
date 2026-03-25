@@ -10,12 +10,14 @@ class UserCreate(BaseModel):
     name: str
     email: EmailStr
     password: str
+    role: str = "renter"
 
 
 class UserOut(BaseModel):
     id: uuid.UUID
     name: str
     email: EmailStr
+    role: str
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -24,6 +26,7 @@ class UserOut(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
+    user: UserOut
 
 
 class LoginRequest(BaseModel):
@@ -65,6 +68,7 @@ class TreeUpdate(BaseModel):
 
 class TreeOut(TreeBase):
     id: uuid.UUID
+    owner_id: uuid.UUID | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}

@@ -1,7 +1,18 @@
 import { create } from 'zustand';
 
+function safeGetUser() {
+  try {
+    const raw = localStorage.getItem('user');
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+    return null;
+  }
+}
+
 const useStore = create((set) => ({
-  user: null,
+  user: safeGetUser(),
   token: localStorage.getItem('token') || null,
 
   selectedTree: null,
@@ -9,7 +20,14 @@ const useStore = create((set) => ({
   endDate: '',
   bookingPrice: null,
 
-  setUser: (user) => set({ user }),
+  setUser: (user) => {
+    if (user) {
+      localStorage.setItem('user', JSON.stringify(user));
+    } else {
+      localStorage.removeItem('user');
+    }
+    set({ user });
+  },
 
   setToken: (token) => {
     if (token) {
@@ -20,9 +38,21 @@ const useStore = create((set) => ({
     set({ token });
   },
 
+  loginUser: (token, user) => {
+    localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(user));
+    set({ token, user });
+  },
+
   logout: () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
     set({ user: null, token: null });
+  },
+
+  isOwner: () => {
+    const state = useStore.getState();
+    return state.user?.role === 'owner';
   },
 
   setSelectedTree: (tree) => set({ selectedTree: tree }),

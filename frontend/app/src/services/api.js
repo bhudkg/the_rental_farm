@@ -13,6 +13,17 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+    }
+    return Promise.reject(error);
+  },
+);
+
 // ── Trees ──
 
 export const fetchTrees = (type) => {
@@ -51,5 +62,15 @@ export const fetchOrder = (id) => api.get(`/orders/${id}`).then((r) => r.data);
 export const register = (data) => api.post('/auth/register', data).then((r) => r.data);
 
 export const login = (data) => api.post('/auth/login', data).then((r) => r.data);
+
+export const fetchMe = () => api.get('/auth/me').then((r) => r.data);
+
+// ── Owner ──
+
+export const fetchOwnerTrees = () => api.get('/owner/trees').then((r) => r.data);
+
+export const fetchOwnerOrders = () => api.get('/owner/orders').then((r) => r.data);
+
+export const fetchOwnerStats = () => api.get('/owner/stats').then((r) => r.data);
 
 export default api;

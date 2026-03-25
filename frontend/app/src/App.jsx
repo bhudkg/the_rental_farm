@@ -1,14 +1,36 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import RequireOwner from './components/RequireOwner';
 import Home from './pages/Home';
 import Trees from './pages/Trees';
 import TreeDetail from './pages/TreeDetail';
 import Orders from './pages/Orders';
 import OrderDetail from './pages/OrderDetail';
 import Login from './pages/Login';
+import OwnerDashboard from './pages/owner/OwnerDashboard';
+import OwnerTrees from './pages/owner/OwnerTrees';
+import AddTree from './pages/owner/AddTree';
+import EditTree from './pages/owner/EditTree';
+import TreeQR from './pages/owner/TreeQR';
+import useStore from './store/useStore';
+import { fetchMe } from './services/api';
 
 export default function App() {
+  const token = useStore((s) => s.token);
+  const setUser = useStore((s) => s.setUser);
+  const logout = useStore((s) => s.logout);
+
+  useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
+    fetchMe()
+      .then((user) => { if (!cancelled) setUser(user); })
+      .catch(() => { if (!cancelled) logout(); });
+    return () => { cancelled = true; };
+  }, []);
+
   return (
     <BrowserRouter>
       <div className="flex flex-col min-h-screen">
@@ -21,6 +43,12 @@ export default function App() {
             <Route path="/orders" element={<Orders />} />
             <Route path="/orders/:id" element={<OrderDetail />} />
             <Route path="/login" element={<Login />} />
+
+            <Route path="/owner" element={<RequireOwner><OwnerDashboard /></RequireOwner>} />
+            <Route path="/owner/trees" element={<RequireOwner><OwnerTrees /></RequireOwner>} />
+            <Route path="/owner/trees/new" element={<RequireOwner><AddTree /></RequireOwner>} />
+            <Route path="/owner/trees/:id/edit" element={<RequireOwner><EditTree /></RequireOwner>} />
+            <Route path="/owner/trees/:id/qr" element={<RequireOwner><TreeQR /></RequireOwner>} />
           </Routes>
         </main>
         <Footer />

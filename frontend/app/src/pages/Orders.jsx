@@ -17,6 +17,7 @@ export default function Orders() {
   useEffect(() => {
     fetchOrders()
       .then(setOrders)
+      .catch(() => setOrders([]))
       .finally(() => setLoading(false));
   }, []);
 

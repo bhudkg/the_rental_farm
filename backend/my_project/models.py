@@ -15,15 +15,18 @@ class User(Base):
     name: Mapped[str] = mapped_column(String(120), nullable=False)
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    role: Mapped[str] = mapped_column(String(20), nullable=False, default="renter")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     orders: Mapped[list["Order"]] = relationship(back_populates="user")
+    listed_trees: Mapped[list["Tree"]] = relationship(back_populates="owner")
 
 
 class Tree(Base):
     __tablename__ = "trees"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    owner_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     type: Mapped[str] = mapped_column(String(50), nullable=False)
     description: Mapped[str] = mapped_column(String(2000), nullable=True)
@@ -36,6 +39,7 @@ class Tree(Base):
     available_quantity: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
+    owner: Mapped["User | None"] = relationship(back_populates="listed_trees")
     orders: Mapped[list["Order"]] = relationship(back_populates="tree")
 
 
