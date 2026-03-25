@@ -1,0 +1,19 @@
+# Optional: Use this if you prefer Docker over local Homebrew PostgreSQL.
+# Currently using Homebrew postgresql@14 on port 5431.
+# To use Docker instead, install Docker Desktop and run: docker compose up -d
+services:
+  db:
+    image: postgres:16
+    container_name: the_rental_farm_db
+    restart: unless-stopped
+    ports:
+      - "5431:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-rental_farm_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rental_farm_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-the_rental_farm}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
+volumes:
+  pg_data:

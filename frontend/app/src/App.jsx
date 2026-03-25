@@ -1,40 +1,30 @@
-import { useState, useEffect } from 'react'
-import './App.css'
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import Navbar from './components/Navbar';
+import Footer from './components/Footer';
+import Home from './pages/Home';
+import Trees from './pages/Trees';
+import TreeDetail from './pages/TreeDetail';
+import Orders from './pages/Orders';
+import OrderDetail from './pages/OrderDetail';
+import Login from './pages/Login';
 
-function App() {
-  const [message, setMessage] = useState('')
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-
-  useEffect(() => {
-    fetch('/api')
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        return res.json()
-      })
-      .then((data) => {
-        setMessage(data.message)
-        setLoading(false)
-      })
-      .catch((err) => {
-        setError(err.message)
-        setLoading(false)
-      })
-  }, [])
-
+export default function App() {
   return (
-    <div className="app">
-      <section className="hero-section">
-        <h1>The Rental Farm</h1>
-        <div className="api-card">
-          <h2>Backend API Response</h2>
-          {loading && <p className="status loading">Connecting to backend...</p>}
-          {error && <p className="status error">Error: {error}</p>}
-          {message && <p className="status success">{message}</p>}
-        </div>
-      </section>
-    </div>
-  )
+    <BrowserRouter>
+      <div className="flex flex-col min-h-screen">
+        <Navbar />
+        <main className="flex-1">
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/trees" element={<Trees />} />
+            <Route path="/trees/:id" element={<TreeDetail />} />
+            <Route path="/orders" element={<Orders />} />
+            <Route path="/orders/:id" element={<OrderDetail />} />
+            <Route path="/login" element={<Login />} />
+          </Routes>
+        </main>
+        <Footer />
+      </div>
+    </BrowserRouter>
+  );
 }
-
-export default App
