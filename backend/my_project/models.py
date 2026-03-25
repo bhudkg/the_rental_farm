@@ -29,14 +29,27 @@ class Tree(Base):
     owner_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     type: Mapped[str] = mapped_column(String(50), nullable=False)
+    variety: Mapped[str | None] = mapped_column(String(150), nullable=True)
+    speciality: Mapped[str | None] = mapped_column(String(500), nullable=True)
     description: Mapped[str] = mapped_column(String(2000), nullable=True)
+
+    # Location
+    location: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    city: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    state: Mapped[str | None] = mapped_column(String(100), nullable=True)
+
+    # Pricing
     price_per_day: Mapped[float] = mapped_column(Float, nullable=False)
     price_per_month: Mapped[float] = mapped_column(Float, nullable=False)
+    price_per_season: Mapped[float | None] = mapped_column(Float, nullable=True)
     deposit: Mapped[float] = mapped_column(Float, nullable=False, default=0)
+
+    # Details
     size: Mapped[str] = mapped_column(String(50), nullable=True)
+    min_quantity: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    available_quantity: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     maintenance_required: Mapped[bool] = mapped_column(Boolean, default=False)
     image_url: Mapped[str] = mapped_column(String(500), nullable=True)
-    available_quantity: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     owner: Mapped["User | None"] = relationship(back_populates="listed_trees")

@@ -74,11 +74,15 @@ export default function OwnerTrees() {
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-gray-900 truncate">{tree.name}</h3>
                 <p className="text-sm text-gray-500 capitalize">
-                  {tree.type} &middot; {tree.size} &middot; Qty: {tree.available_quantity}
+                  {tree.type}{tree.variety ? ` — ${tree.variety}` : ''} &middot; {tree.size}
                 </p>
                 <p className="text-sm text-gray-500 mt-0.5">
-                  ₹{tree.price_per_day}/day &middot; ₹{tree.price_per_month}/month
+                  ₹{tree.price_per_day}/day &middot; ₹{tree.price_per_month}/mo
+                  {tree.price_per_season ? ` · ₹${tree.price_per_season.toLocaleString()}/season` : ''}
                 </p>
+                {(tree.city || tree.state) && (
+                  <p className="text-xs text-gray-400 mt-0.5">{[tree.city, tree.state].filter(Boolean).join(', ')}</p>
+                )}
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
                 <Link

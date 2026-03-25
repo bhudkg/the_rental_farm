@@ -39,14 +39,21 @@ class LoginRequest(BaseModel):
 class TreeBase(BaseModel):
     name: str
     type: str
+    variety: str | None = None
+    speciality: str | None = None
     description: str | None = None
+    location: str | None = None
+    city: str | None = None
+    state: str | None = None
     price_per_day: float
     price_per_month: float
+    price_per_season: float | None = None
     deposit: float = 0
     size: str | None = None
+    min_quantity: int = 1
+    available_quantity: int = 1
     maintenance_required: bool = False
     image_url: str | None = None
-    available_quantity: int = 1
 
 
 class TreeCreate(TreeBase):
@@ -56,14 +63,21 @@ class TreeCreate(TreeBase):
 class TreeUpdate(BaseModel):
     name: str | None = None
     type: str | None = None
+    variety: str | None = None
+    speciality: str | None = None
     description: str | None = None
+    location: str | None = None
+    city: str | None = None
+    state: str | None = None
     price_per_day: float | None = None
     price_per_month: float | None = None
+    price_per_season: float | None = None
     deposit: float | None = None
     size: str | None = None
+    min_quantity: int | None = None
+    available_quantity: int | None = None
     maintenance_required: bool | None = None
     image_url: str | None = None
-    available_quantity: int | None = None
 
 
 class TreeOut(TreeBase):

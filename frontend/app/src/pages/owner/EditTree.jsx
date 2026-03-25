@@ -5,6 +5,14 @@ import { fetchTree, updateTree } from '../../services/api';
 const TYPES = ['mango', 'banana', 'orange', 'lemon', 'coconut', 'guava', 'apple', 'papaya', 'pomegranate', 'jackfruit', 'chiku'];
 const SIZES = ['Small (1-2 ft)', 'Medium (3-4 ft)', 'Large (5-6 ft)', 'Extra Large (7-8 ft)'];
 
+const INDIAN_STATES = [
+  'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa',
+  'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala',
+  'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland',
+  'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura',
+  'Uttar Pradesh', 'Uttarakhand', 'West Bengal', 'Jammu & Kashmir', 'Delhi',
+];
+
 export default function EditTree() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -19,14 +27,21 @@ export default function EditTree() {
         setForm({
           name: tree.name,
           type: tree.type,
+          variety: tree.variety || '',
+          speciality: tree.speciality || '',
           description: tree.description || '',
+          location: tree.location || '',
+          city: tree.city || '',
+          state: tree.state || '',
           price_per_day: tree.price_per_day,
           price_per_month: tree.price_per_month,
+          price_per_season: tree.price_per_season || '',
           deposit: tree.deposit,
           size: tree.size || 'Medium (3-4 ft)',
+          min_quantity: tree.min_quantity || 1,
+          available_quantity: tree.available_quantity,
           maintenance_required: tree.maintenance_required,
           image_url: tree.image_url || '',
-          available_quantity: tree.available_quantity,
         });
       })
       .finally(() => setLoading(false));
@@ -57,8 +72,15 @@ export default function EditTree() {
         ...form,
         price_per_day: parseFloat(form.price_per_day),
         price_per_month: parseFloat(form.price_per_month),
+        price_per_season: form.price_per_season ? parseFloat(form.price_per_season) : null,
         deposit: parseFloat(form.deposit || '0'),
+        min_quantity: parseInt(form.min_quantity, 10),
         available_quantity: parseInt(form.available_quantity, 10),
+        variety: form.variety || null,
+        speciality: form.speciality || null,
+        location: form.location || null,
+        city: form.city || null,
+        state: form.state || null,
       };
       await updateTree(id, payload);
       navigate('/owner/trees');
@@ -68,6 +90,9 @@ export default function EditTree() {
       setSaving(false);
     }
   };
+
+  const inputClass = 'w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none';
+  const labelClass = 'block text-sm font-medium text-gray-700 mb-1';
 
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
@@ -80,138 +105,131 @@ export default function EditTree() {
 
       <h1 className="text-2xl font-bold text-gray-900 mb-8">Edit Tree</h1>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Tree Name *</label>
-          <input
-            type="text"
-            required
-            value={form.name}
-            onChange={update('name')}
-            className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
-          />
-        </div>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Basic info */}
+        <fieldset className="space-y-4">
+          <legend className="text-xs font-bold text-gray-400 uppercase tracking-wider">Basic Info</legend>
 
-        <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Type *</label>
-            <select
-              value={form.type}
-              onChange={update('type')}
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none bg-white"
-            >
-              {TYPES.map((t) => (
-                <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
-              ))}
-            </select>
+            <label className={labelClass}>Tree Name *</label>
+            <input type="text" required value={form.name} onChange={update('name')} className={inputClass} />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Size</label>
-            <select
-              value={form.size}
-              onChange={update('size')}
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none bg-white"
-            >
-              {SIZES.map((s) => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
-          </div>
-        </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-          <textarea
-            rows={3}
-            value={form.description}
-            onChange={update('description')}
-            className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none resize-none"
-          />
-        </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={labelClass}>Fruit Type *</label>
+              <select value={form.type} onChange={update('type')} className={`${inputClass} bg-white`}>
+                {TYPES.map((t) => (
+                  <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className={labelClass}>Variety / Breed</label>
+              <input type="text" value={form.variety} onChange={update('variety')} placeholder="e.g. Alphonso (Hapus)" className={inputClass} />
+            </div>
+          </div>
 
-        <div className="grid grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Price/Day ($) *</label>
-            <input
-              type="number"
-              step="0.01"
-              required
-              value={form.price_per_day}
-              onChange={update('price_per_day')}
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
-            />
+            <label className={labelClass}>Speciality</label>
+            <input type="text" value={form.speciality} onChange={update('speciality')} placeholder="What makes this tree special?" className={inputClass} />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Price/Month ($) *</label>
-            <input
-              type="number"
-              step="0.01"
-              required
-              value={form.price_per_month}
-              onChange={update('price_per_month')}
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Deposit ($)</label>
-            <input
-              type="number"
-              step="0.01"
-              value={form.deposit}
-              onChange={update('deposit')}
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
-            />
-          </div>
-        </div>
 
-        <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Available Quantity</label>
-            <input
-              type="number"
-              min="1"
-              value={form.available_quantity}
-              onChange={update('available_quantity')}
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
-            />
+            <label className={labelClass}>Description</label>
+            <textarea rows={3} value={form.description} onChange={update('description')} className={`${inputClass} resize-none`} />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Image URL</label>
-            <input
-              type="url"
-              value={form.image_url}
-              onChange={update('image_url')}
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
-            />
-          </div>
-        </div>
+        </fieldset>
 
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={form.maintenance_required}
-            onChange={update('maintenance_required')}
-            className="w-4 h-4 text-primary rounded border-gray-300 focus:ring-primary"
-          />
-          <span className="text-sm text-gray-700">Maintenance required</span>
-        </label>
+        {/* Location */}
+        <fieldset className="space-y-4">
+          <legend className="text-xs font-bold text-gray-400 uppercase tracking-wider">Location</legend>
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className={labelClass}>Local Area</label>
+              <input type="text" value={form.location} onChange={update('location')} placeholder="Farm / Area name" className={inputClass} />
+            </div>
+            <div>
+              <label className={labelClass}>City</label>
+              <input type="text" value={form.city} onChange={update('city')} placeholder="Nearest city" className={inputClass} />
+            </div>
+            <div>
+              <label className={labelClass}>State</label>
+              <select value={form.state} onChange={update('state')} className={`${inputClass} bg-white`}>
+                <option value="">Select state</option>
+                {INDIAN_STATES.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </fieldset>
+
+        {/* Pricing */}
+        <fieldset className="space-y-4">
+          <legend className="text-xs font-bold text-gray-400 uppercase tracking-wider">Pricing</legend>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div>
+              <label className={labelClass}>₹ / Day *</label>
+              <input type="number" step="0.01" required value={form.price_per_day} onChange={update('price_per_day')} className={inputClass} />
+            </div>
+            <div>
+              <label className={labelClass}>₹ / Month *</label>
+              <input type="number" step="0.01" required value={form.price_per_month} onChange={update('price_per_month')} className={inputClass} />
+            </div>
+            <div>
+              <label className={labelClass}>₹ / Season</label>
+              <input type="number" step="0.01" value={form.price_per_season} onChange={update('price_per_season')} className={inputClass} />
+            </div>
+            <div>
+              <label className={labelClass}>Deposit (₹)</label>
+              <input type="number" step="0.01" value={form.deposit} onChange={update('deposit')} className={inputClass} />
+            </div>
+          </div>
+        </fieldset>
+
+        {/* Details */}
+        <fieldset className="space-y-4">
+          <legend className="text-xs font-bold text-gray-400 uppercase tracking-wider">Details</legend>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            <div>
+              <label className={labelClass}>Size</label>
+              <select value={form.size} onChange={update('size')} className={`${inputClass} bg-white`}>
+                {SIZES.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className={labelClass}>Min Quantity Guarantee</label>
+              <input type="number" min="1" value={form.min_quantity} onChange={update('min_quantity')} className={inputClass} />
+            </div>
+            <div>
+              <label className={labelClass}>Available Quantity</label>
+              <input type="number" min="1" value={form.available_quantity} onChange={update('available_quantity')} className={inputClass} />
+            </div>
+          </div>
+
+          <div>
+            <label className={labelClass}>Image URL</label>
+            <input type="url" value={form.image_url} onChange={update('image_url')} className={inputClass} />
+          </div>
+
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" checked={form.maintenance_required} onChange={update('maintenance_required')} className="w-4 h-4 text-primary rounded border-gray-300 focus:ring-primary" />
+            <span className="text-sm text-gray-700">We provide maintenance</span>
+          </label>
+        </fieldset>
 
         {error && (
           <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>
         )}
 
         <div className="flex gap-3 pt-2">
-          <Link
-            to="/owner/trees"
-            className="flex-1 px-4 py-3 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium text-center hover:bg-gray-50 transition-colors"
-          >
+          <Link to="/owner/trees" className="flex-1 px-4 py-3 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium text-center hover:bg-gray-50 transition-colors">
             Cancel
           </Link>
-          <button
-            type="submit"
-            disabled={saving}
-            className="flex-1 px-4 py-3 bg-primary text-white rounded-xl text-sm font-medium hover:bg-primary-dark transition-colors disabled:opacity-50"
-          >
+          <button type="submit" disabled={saving} className="flex-1 px-4 py-3 bg-primary text-white rounded-xl text-sm font-medium hover:bg-primary-dark transition-colors disabled:opacity-50">
             {saving ? 'Saving...' : 'Save Changes'}
           </button>
         </div>
