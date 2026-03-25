@@ -9,11 +9,44 @@ from models import Order, Tree, User
 
 # ── Trees ──
 
-def get_trees(db: Session, tree_type: str | None = None, skip: int = 0, limit: int = 50) -> list[Tree]:
+def get_trees(
+    db: Session,
+    tree_type: str | None = None,
+    price_min: float | None = None,
+    price_max: float | None = None,
+    size: str | None = None,
+    maintenance: bool | None = None,
+    sort_by: str | None = None,
+    search: str | None = None,
+    skip: int = 0,
+    limit: int = 50,
+) -> list[Tree]:
     q = db.query(Tree)
     if tree_type:
         q = q.filter(Tree.type == tree_type)
-    return q.order_by(Tree.created_at.desc()).offset(skip).limit(limit).all()
+    if price_min is not None:
+        q = q.filter(Tree.price_per_day >= price_min)
+    if price_max is not None:
+        q = q.filter(Tree.price_per_day <= price_max)
+    if size:
+        q = q.filter(Tree.size.ilike(f"%{size}%"))
+    if maintenance is not None:
+        q = q.filter(Tree.maintenance_required == maintenance)
+    if search:
+        q = q.filter(Tree.name.ilike(f"%{search}%"))
+
+    if sort_by == "price_low":
+        q = q.order_by(Tree.price_per_day.asc())
+    elif sort_by == "price_high":
+        q = q.order_by(Tree.price_per_day.desc())
+    elif sort_by == "name_asc":
+        q = q.order_by(Tree.name.asc())
+    elif sort_by == "name_desc":
+        q = q.order_by(Tree.name.desc())
+    else:
+        q = q.order_by(Tree.created_at.desc())
+
+    return q.offset(skip).limit(limit).all()
 
 
 def get_tree(db: Session, tree_id: uuid.UUID) -> Tree | None:

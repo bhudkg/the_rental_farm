@@ -18,6 +18,22 @@ const CATEGORIES = [
   { type: 'chiku', label: 'Chiku', img: 'https://img.icons8.com/color/96/kiwi.png' },
 ];
 
+const PRICE_RANGES = [
+  { label: 'All Prices', min: null, max: null },
+  { label: 'Under ₹30', min: null, max: 30 },
+  { label: '₹30 – ₹50', min: 30, max: 50 },
+  { label: '₹50+', min: 50, max: null },
+];
+
+const SIZES = ['All', 'Small', 'Medium', 'Large', 'Extra Large'];
+
+const SORT_OPTIONS = [
+  { value: '', label: 'Newest' },
+  { value: 'price_low', label: 'Price: Low → High' },
+  { value: 'price_high', label: 'Price: High → Low' },
+  { value: 'name_asc', label: 'Name: A → Z' },
+];
+
 const STEPS = [
   { num: '01', title: 'Browse & Choose', desc: 'Explore our curated collection of fruit trees for your farm or garden.' },
   { num: '02', title: 'Pick Your Dates', desc: 'Select the rental period that works for you — a week, a month, or a season.' },
@@ -29,18 +45,45 @@ export default function Home() {
   const [trees, setTrees] = useState([]);
   const [activeType, setActiveType] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showFilters, setShowFilters] = useState(false);
   const scrollRef = useRef(null);
+
+  const [priceRange, setPriceRange] = useState(0);
+  const [sizeFilter, setSizeFilter] = useState('All');
+  const [sortBy, setSortBy] = useState('');
+  const [maintenance, setMaintenance] = useState(null);
+
+  const activeFilterCount =
+    (priceRange !== 0 ? 1 : 0) +
+    (sizeFilter !== 'All' ? 1 : 0) +
+    (sortBy !== '' ? 1 : 0) +
+    (maintenance !== null ? 1 : 0);
 
   useEffect(() => {
     setLoading(true);
-    fetchTrees(activeType)
+    const filters = {};
+    if (activeType) filters.type = activeType;
+    const pr = PRICE_RANGES[priceRange];
+    if (pr.min != null) filters.price_min = pr.min;
+    if (pr.max != null) filters.price_max = pr.max;
+    if (sizeFilter !== 'All') filters.size = sizeFilter;
+    if (sortBy) filters.sort_by = sortBy;
+    if (maintenance !== null) filters.maintenance = maintenance;
+    fetchTrees(filters)
       .then(setTrees)
       .finally(() => setLoading(false));
-  }, [activeType]);
+  }, [activeType, priceRange, sizeFilter, sortBy, maintenance]);
+
+  const clearFilters = () => {
+    setPriceRange(0);
+    setSizeFilter('All');
+    setSortBy('');
+    setMaintenance(null);
+  };
 
   return (
     <div>
-      {/* Category bar — Flipkart style */}
+      {/* Category bar */}
       <section className="bg-white border-b border-gray-200 shadow-sm sticky top-16 z-40">
         <div className="max-w-7xl mx-auto px-2 sm:px-4">
           <div
@@ -53,27 +96,14 @@ export default function Home() {
                 key={cat.label}
                 onClick={() => setActiveType(cat.type)}
                 className={`flex flex-col items-center gap-1 px-3 py-1.5 min-w-[72px] rounded-lg transition-all flex-shrink-0 ${
-                  activeType === cat.type
-                    ? 'bg-primary/5'
-                    : 'hover:bg-gray-50'
+                  activeType === cat.type ? 'bg-primary/5' : 'hover:bg-gray-50'
                 }`}
               >
-                <img
-                  src={cat.img}
-                  alt={cat.label}
-                  className="w-9 h-9 object-contain"
-                  loading="lazy"
-                />
-                <span
-                  className={`text-[11px] font-semibold whitespace-nowrap leading-tight ${
-                    activeType === cat.type ? 'text-primary' : 'text-gray-600'
-                  }`}
-                >
+                <img src={cat.img} alt={cat.label} className="w-9 h-9 object-contain" loading="lazy" />
+                <span className={`text-[11px] font-semibold whitespace-nowrap leading-tight ${activeType === cat.type ? 'text-primary' : 'text-gray-600'}`}>
                   {cat.label}
                 </span>
-                {activeType === cat.type && (
-                  <div className="w-6 h-0.5 bg-primary rounded-full" />
-                )}
+                {activeType === cat.type && <div className="w-6 h-0.5 bg-primary rounded-full" />}
               </button>
             ))}
           </div>
@@ -82,21 +112,126 @@ export default function Home() {
 
       {/* Trees grid */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="flex items-end justify-between mb-5">
+        {/* Header + filter toggle */}
+        <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-xl md:text-2xl font-bold text-gray-900">
-              {activeType
-                ? `${activeType.charAt(0).toUpperCase() + activeType.slice(1)} Trees`
-                : 'All Fruit Trees'}
+              {activeType ? `${activeType.charAt(0).toUpperCase() + activeType.slice(1)} Trees` : 'All Fruit Trees'}
             </h2>
-            <p className="text-gray-400 text-sm mt-0.5">
-              {trees.length} trees available for rent
-            </p>
+            <p className="text-gray-400 text-sm mt-0.5">{trees.length} trees available for rent</p>
           </div>
-          <Link to="/trees" className="text-primary font-medium text-sm hover:underline hidden sm:block">
-            View all &rarr;
-          </Link>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium border transition-colors ${
+                showFilters || activeFilterCount > 0
+                  ? 'border-primary bg-primary/5 text-primary'
+                  : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
+              </svg>
+              Filters
+              {activeFilterCount > 0 && (
+                <span className="inline-flex items-center justify-center w-5 h-5 bg-primary text-white text-[10px] font-bold rounded-full">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
+            <Link to="/trees" className="text-primary font-medium text-sm hover:underline hidden sm:block">
+              View all &rarr;
+            </Link>
+          </div>
         </div>
+
+        {/* Filter panel */}
+        {showFilters && (
+          <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 mb-5 animate-in slide-in-from-top-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Price */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Price / Day</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {PRICE_RANGES.map((pr, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setPriceRange(i)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                        priceRange === i ? 'bg-primary text-white' : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-300'
+                      }`}
+                    >
+                      {pr.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Size */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Size</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {SIZES.map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => setSizeFilter(s)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                        sizeFilter === s ? 'bg-primary text-white' : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-300'
+                      }`}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Maintenance */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Maintenance</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    { val: null, label: 'Any' },
+                    { val: false, label: 'Self-care' },
+                    { val: true, label: 'We maintain' },
+                  ].map((opt) => (
+                    <button
+                      key={String(opt.val)}
+                      onClick={() => setMaintenance(opt.val)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                        maintenance === opt.val ? 'bg-primary text-white' : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-300'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Sort */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Sort By</label>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs font-medium text-gray-700 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                >
+                  {SORT_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {activeFilterCount > 0 && (
+              <div className="mt-3 pt-3 border-t border-gray-200 flex items-center justify-between">
+                <p className="text-xs text-gray-500">{activeFilterCount} filter{activeFilterCount > 1 ? 's' : ''} applied</p>
+                <button onClick={clearFilters} className="text-xs text-red-500 font-medium hover:text-red-600">
+                  Clear all filters
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         {loading ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -106,12 +241,9 @@ export default function Home() {
           </div>
         ) : trees.length === 0 ? (
           <div className="text-center py-16">
-            <p className="text-gray-400 text-lg">No trees found in this category.</p>
-            <button
-              onClick={() => setActiveType(null)}
-              className="mt-3 text-primary font-medium text-sm hover:underline"
-            >
-              Show all trees
+            <p className="text-gray-400 text-lg">No trees match your filters.</p>
+            <button onClick={() => { setActiveType(null); clearFilters(); }} className="mt-3 text-primary font-medium text-sm hover:underline">
+              Clear filters & show all
             </button>
           </div>
         ) : (
@@ -171,20 +303,12 @@ export default function Home() {
       <section className="bg-primary text-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
           <h2 className="text-xl md:text-2xl font-bold mb-2">Ready to grow your garden?</h2>
-          <p className="text-primary-light mb-5 text-sm">
-            Rent premium fruit trees delivered and planted at your doorstep.
-          </p>
+          <p className="text-primary-light mb-5 text-sm">Rent premium fruit trees delivered and planted at your doorstep.</p>
           <div className="flex flex-wrap justify-center gap-3">
-            <Link
-              to="/trees"
-              className="px-6 py-2.5 bg-white text-primary font-semibold rounded-xl hover:bg-gray-50 transition-colors text-sm"
-            >
+            <Link to="/trees" className="px-6 py-2.5 bg-white text-primary font-semibold rounded-xl hover:bg-gray-50 transition-colors text-sm">
               Rent a Tree
             </Link>
-            <Link
-              to="/owner"
-              className="px-6 py-2.5 border-2 border-white/40 text-white font-semibold rounded-xl hover:bg-white/10 transition-colors text-sm"
-            >
+            <Link to="/owner" className="px-6 py-2.5 border-2 border-white/40 text-white font-semibold rounded-xl hover:bg-white/10 transition-colors text-sm">
               List Your Trees
             </Link>
           </div>

@@ -26,8 +26,19 @@ api.interceptors.response.use(
 
 // ── Trees ──
 
-export const fetchTrees = (type) => {
-  const params = type ? { type } : {};
+export const fetchTrees = (filters = {}) => {
+  const params = {};
+  if (typeof filters === 'string') {
+    if (filters) params.type = filters;
+  } else {
+    if (filters.type) params.type = filters.type;
+    if (filters.price_min != null) params.price_min = filters.price_min;
+    if (filters.price_max != null) params.price_max = filters.price_max;
+    if (filters.size) params.size = filters.size;
+    if (filters.maintenance != null) params.maintenance = filters.maintenance;
+    if (filters.sort_by) params.sort_by = filters.sort_by;
+    if (filters.search) params.search = filters.search;
+  }
   return api.get('/trees', { params }).then((r) => r.data);
 };
 

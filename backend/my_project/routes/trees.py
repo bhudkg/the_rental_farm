@@ -15,11 +15,28 @@ router = APIRouter(prefix="/api/trees", tags=["trees"])
 @router.get("", response_model=list[TreeOut])
 def list_trees(
     type: str | None = Query(None, description="Filter by tree type"),
+    price_min: float | None = Query(None, description="Min price per day"),
+    price_max: float | None = Query(None, description="Max price per day"),
+    size: str | None = Query(None, description="Filter by size keyword"),
+    maintenance: bool | None = Query(None, description="Filter by maintenance required"),
+    sort_by: str | None = Query(None, description="Sort: price_low, price_high, name_asc, name_desc"),
+    search: str | None = Query(None, description="Search by tree name"),
     skip: int = 0,
     limit: int = 50,
     db: Session = Depends(get_db),
 ):
-    return crud.get_trees(db, tree_type=type, skip=skip, limit=limit)
+    return crud.get_trees(
+        db,
+        tree_type=type,
+        price_min=price_min,
+        price_max=price_max,
+        size=size,
+        maintenance=maintenance,
+        sort_by=sort_by,
+        search=search,
+        skip=skip,
+        limit=limit,
+    )
 
 
 @router.get("/{tree_id}", response_model=TreeOut)
