@@ -66,21 +66,21 @@ export default function BookingModal({ tree, startDate, endDate, totalPrice, dep
           </div>
           <div className="flex justify-between">
             <span className="text-gray-500">Rate</span>
-            <span className="font-medium">${tree.price_per_day}/day</span>
+            <span className="font-medium">₹{tree.price_per_day}/day</span>
           </div>
           <hr className="border-gray-200" />
           <div className="flex justify-between">
             <span className="text-gray-500">Rental total</span>
-            <span className="font-bold text-gray-900">${totalPrice.toFixed(2)}</span>
+            <span className="font-bold text-gray-900">₹{totalPrice.toFixed(2)}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-500">Refundable deposit</span>
-            <span className="font-medium">${deposit.toFixed(2)}</span>
+            <span className="font-medium">₹{deposit.toFixed(2)}</span>
           </div>
           <hr className="border-gray-200" />
           <div className="flex justify-between text-base">
             <span className="font-semibold text-gray-900">Total due</span>
-            <span className="font-bold text-primary">${(totalPrice + deposit).toFixed(2)}</span>
+            <span className="font-bold text-primary">₹{(totalPrice + deposit).toFixed(2)}</span>
           </div>
         </div>
 

@@ -77,7 +77,7 @@ export default function OwnerTrees() {
                   {tree.type} &middot; {tree.size} &middot; Qty: {tree.available_quantity}
                 </p>
                 <p className="text-sm text-gray-500 mt-0.5">
-                  ${tree.price_per_day}/day &middot; ${tree.price_per_month}/month
+                  ₹{tree.price_per_day}/day &middot; ₹{tree.price_per_month}/month
                 </p>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">

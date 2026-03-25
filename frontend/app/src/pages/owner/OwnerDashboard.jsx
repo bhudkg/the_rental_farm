@@ -71,7 +71,7 @@ export default function OwnerDashboard() {
           </div>
           <div className="bg-white border border-gray-100 rounded-2xl p-5">
             <p className="text-sm text-gray-400 mb-1">Total Revenue</p>
-            <p className="text-3xl font-bold text-gray-900">${stats.total_revenue.toFixed(2)}</p>
+            <p className="text-3xl font-bold text-gray-900">₹{stats.total_revenue.toFixed(2)}</p>
           </div>
         </div>
       )}
@@ -142,7 +142,7 @@ export default function OwnerDashboard() {
                 >
                   {order.status}
                 </span>
-                <span className="font-bold text-gray-900">${order.total_price.toFixed(2)}</span>
+                <span className="font-bold text-gray-900">₹{order.total_price.toFixed(2)}</span>
               </div>
             ))}
           </div>

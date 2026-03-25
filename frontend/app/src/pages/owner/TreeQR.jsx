@@ -85,7 +85,7 @@ export default function TreeQR() {
         <h2 className="text-xl font-bold text-gray-900 mt-4">{tree.name}</h2>
         <p className="text-sm text-gray-500 capitalize">{tree.type} &middot; {tree.size}</p>
         <div className="mt-4 inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-semibold">
-          ${tree.price_per_day}/day
+          ₹{tree.price_per_day}/day
         </div>
         <p className="text-xs text-gray-400 mt-4">
           Scan to rent this tree on The Rental Farm

@@ -1,10 +1,17 @@
 import { Link } from 'react-router-dom';
 
 const TYPE_COLORS = {
-  indoor: 'bg-emerald-100 text-emerald-700',
-  outdoor: 'bg-sky-100 text-sky-700',
-  bonsai: 'bg-amber-100 text-amber-700',
-  decorative: 'bg-purple-100 text-purple-700',
+  mango: 'bg-yellow-100 text-yellow-700',
+  banana: 'bg-yellow-50 text-yellow-600',
+  orange: 'bg-orange-100 text-orange-700',
+  lemon: 'bg-lime-100 text-lime-700',
+  coconut: 'bg-amber-100 text-amber-700',
+  guava: 'bg-green-100 text-green-700',
+  apple: 'bg-red-100 text-red-700',
+  papaya: 'bg-orange-50 text-orange-600',
+  pomegranate: 'bg-rose-100 text-rose-700',
+  jackfruit: 'bg-emerald-100 text-emerald-700',
+  chiku: 'bg-amber-50 text-amber-600',
 };
 
 export default function TreeCard({ tree }) {
@@ -41,7 +48,7 @@ export default function TreeCard({ tree }) {
         <div className="flex items-end justify-between">
           <div>
             <span className="text-2xl font-bold text-gray-900">
-              ${tree.price_per_day}
+              ₹{tree.price_per_day}
             </span>
             <span className="text-sm text-gray-400"> /day</span>
           </div>

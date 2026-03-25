@@ -3,7 +3,10 @@ import { useSearchParams } from 'react-router-dom';
 import TreeCard from '../components/TreeCard';
 import { fetchTrees } from '../services/api';
 
-const TYPES = ['all', 'indoor', 'outdoor', 'bonsai', 'decorative'];
+const TYPES = [
+  'all', 'mango', 'banana', 'orange', 'lemon', 'coconut',
+  'guava', 'apple', 'papaya', 'pomegranate', 'jackfruit', 'chiku',
+];
 
 export default function Trees() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -30,13 +33,11 @@ export default function Trees() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Browse Trees</h1>
-        <p className="text-gray-500">Find the perfect tree for your space and occasion.</p>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Browse Fruit Trees</h1>
+        <p className="text-gray-500">Find the perfect fruit tree for your farm, garden, or backyard.</p>
       </div>
 
-      {/* Filters */}
       <div className="flex flex-wrap gap-2 mb-8">
         {TYPES.map((t) => (
           <button
@@ -53,11 +54,10 @@ export default function Trees() {
         ))}
       </div>
 
-      {/* Grid */}
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
           {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="bg-gray-100 rounded-2xl h-80 animate-pulse" />
+            <div key={i} className="bg-gray-100 rounded-2xl h-72 animate-pulse" />
           ))}
         </div>
       ) : trees.length === 0 ? (
@@ -65,7 +65,7 @@ export default function Trees() {
           <p className="text-gray-400 text-lg">No trees found for this category.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
           {trees.map((tree) => (
             <TreeCard key={tree.id} tree={tree} />
           ))}

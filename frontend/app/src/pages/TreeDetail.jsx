@@ -97,15 +97,15 @@ export default function TreeDetail() {
           <div className="grid grid-cols-2 gap-4 mb-8">
             <div className="bg-gray-50 rounded-xl p-4">
               <p className="text-sm text-gray-400 mb-1">Daily Rate</p>
-              <p className="text-xl font-bold text-gray-900">${tree.price_per_day}</p>
+              <p className="text-xl font-bold text-gray-900">₹{tree.price_per_day}</p>
             </div>
             <div className="bg-gray-50 rounded-xl p-4">
               <p className="text-sm text-gray-400 mb-1">Monthly Rate</p>
-              <p className="text-xl font-bold text-gray-900">${tree.price_per_month}</p>
+              <p className="text-xl font-bold text-gray-900">₹{tree.price_per_month}</p>
             </div>
             <div className="bg-gray-50 rounded-xl p-4">
               <p className="text-sm text-gray-400 mb-1">Deposit</p>
-              <p className="text-xl font-bold text-gray-900">${tree.deposit}</p>
+              <p className="text-xl font-bold text-gray-900">₹{tree.deposit}</p>
             </div>
             <div className="bg-gray-50 rounded-xl p-4">
               <p className="text-sm text-gray-400 mb-1">Size</p>
@@ -142,8 +142,8 @@ export default function TreeDetail() {
               >
                 {availability.available ? (
                   <>
-                    Available! {totalDays} days &times; ${tree.price_per_day}/day ={' '}
-                    <span className="font-bold">${totalPrice.toFixed(2)}</span>
+                    Available! {totalDays} days &times; ₹{tree.price_per_day}/day ={' '}
+                    <span className="font-bold">₹{totalPrice.toFixed(2)}</span>
                   </>
                 ) : (
                   'Sorry, this tree is not available for the selected dates.'
@@ -156,7 +156,7 @@ export default function TreeDetail() {
                 onClick={() => setShowModal(true)}
                 className="w-full py-3.5 bg-primary text-white font-semibold rounded-xl hover:bg-primary-dark transition-colors shadow-lg shadow-primary/20"
               >
-                Book Now &mdash; ${totalPrice.toFixed(2)}
+                Book Now &mdash; ₹{totalPrice.toFixed(2)}
               </button>
             )}
           </div>

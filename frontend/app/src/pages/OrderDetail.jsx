@@ -110,17 +110,17 @@ export default function OrderDetail() {
         <hr className="border-gray-200" />
         <div className="flex justify-between">
           <span className="text-gray-500">Rental Cost</span>
-          <span className="font-bold">${order.total_price.toFixed(2)}</span>
+          <span className="font-bold">₹{order.total_price.toFixed(2)}</span>
         </div>
         <div className="flex justify-between">
           <span className="text-gray-500">Refundable Deposit</span>
-          <span className="font-medium">${order.deposit.toFixed(2)}</span>
+          <span className="font-medium">₹{order.deposit.toFixed(2)}</span>
         </div>
         <hr className="border-gray-200" />
         <div className="flex justify-between text-base">
           <span className="font-semibold text-gray-900">Total Paid</span>
           <span className="font-bold text-primary">
-            ${(order.total_price + order.deposit).toFixed(2)}
+            ₹{(order.total_price + order.deposit).toFixed(2)}
           </span>
         </div>
       </div>

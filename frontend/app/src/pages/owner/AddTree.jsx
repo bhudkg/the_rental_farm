@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createTree } from '../../services/api';
 
-const TYPES = ['indoor', 'outdoor', 'bonsai', 'decorative'];
+const TYPES = ['mango', 'banana', 'orange', 'lemon', 'coconut', 'guava', 'apple', 'papaya', 'pomegranate', 'jackfruit', 'chiku'];
 const SIZES = ['Small (1-2 ft)', 'Medium (3-4 ft)', 'Large (5-6 ft)', 'Extra Large (7-8 ft)'];
 
 export default function AddTree() {
@@ -12,7 +12,7 @@ export default function AddTree() {
 
   const [form, setForm] = useState({
     name: '',
-    type: 'indoor',
+    type: 'mango',
     description: '',
     price_per_day: '',
     price_per_month: '',
@@ -69,7 +69,7 @@ export default function AddTree() {
             required
             value={form.name}
             onChange={update('name')}
-            placeholder="e.g. Fiddle Leaf Fig"
+            placeholder="e.g. Alphonso Mango Tree"
             className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
           />
         </div>
@@ -114,7 +114,7 @@ export default function AddTree() {
 
         <div className="grid grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Price/Day ($) *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Price/Day (₹) *</label>
             <input
               type="number"
               step="0.01"
@@ -126,7 +126,7 @@ export default function AddTree() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Price/Month ($) *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Price/Month (₹) *</label>
             <input
               type="number"
               step="0.01"
@@ -138,7 +138,7 @@ export default function AddTree() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Deposit ($)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Deposit (₹)</label>
             <input
               type="number"
               step="0.01"
