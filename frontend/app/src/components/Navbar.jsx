@@ -15,6 +15,7 @@ export default function Navbar() {
     { to: '/', label: 'Home' },
     { to: '/trees', label: 'Browse Trees' },
     ...(token ? [{ to: '/orders', label: 'My Orders' }] : []),
+    { to: '/owner', label: 'List Your Trees' },
   ];
 
   const ownerLinks = [
