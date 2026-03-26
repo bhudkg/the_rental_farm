@@ -21,6 +21,8 @@ def list_trees(
     maintenance: bool | None = Query(None, description="Filter by maintenance required"),
     sort_by: str | None = Query(None, description="Sort: price_low, price_high, name_asc, name_desc"),
     search: str | None = Query(None, description="Search by tree name"),
+    state: str | None = Query(None, description="Filter by state"),
+    city: str | None = Query(None, description="Filter by city"),
     skip: int = 0,
     limit: int = 50,
     db: Session = Depends(get_db),
@@ -34,6 +36,8 @@ def list_trees(
         maintenance=maintenance,
         sort_by=sort_by,
         search=search,
+        state=state,
+        city=city,
         skip=skip,
         limit=limit,
     )

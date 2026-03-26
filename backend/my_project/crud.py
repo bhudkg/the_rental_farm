@@ -18,6 +18,8 @@ def get_trees(
     maintenance: bool | None = None,
     sort_by: str | None = None,
     search: str | None = None,
+    state: str | None = None,
+    city: str | None = None,
     skip: int = 0,
     limit: int = 50,
 ) -> list[Tree]:
@@ -34,6 +36,10 @@ def get_trees(
         q = q.filter(Tree.maintenance_required == maintenance)
     if search:
         q = q.filter(Tree.name.ilike(f"%{search}%"))
+    if state:
+        q = q.filter(Tree.state == state)
+    if city:
+        q = q.filter(Tree.city.ilike(f"%{city}%"))
 
     if sort_by == "price_low":
         q = q.order_by(Tree.price_per_day.asc())

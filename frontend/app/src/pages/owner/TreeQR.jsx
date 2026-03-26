@@ -83,11 +83,31 @@ export default function TreeQR() {
           className="mx-auto"
         />
         <h2 className="text-xl font-bold text-gray-900 mt-4">{tree.name}</h2>
-        <p className="text-sm text-gray-500 capitalize">{tree.type} &middot; {tree.size}</p>
-        <div className="mt-4 inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-semibold">
-          ₹{tree.price_per_day}/day
+        <p className="text-sm text-gray-500 capitalize">
+          {tree.type}{tree.variety ? ` — ${tree.variety}` : ''} &middot; {tree.size}
+        </p>
+        {(tree.city || tree.state) && (
+          <p className="text-xs text-gray-400 mt-1">
+            {[tree.location, tree.city, tree.state].filter(Boolean).join(', ')}
+          </p>
+        )}
+        {tree.speciality && (
+          <p className="text-xs text-gray-500 mt-2 italic max-w-xs mx-auto">{tree.speciality}</p>
+        )}
+        <div className="mt-3 flex flex-wrap justify-center gap-2">
+          <span className="inline-flex items-center bg-primary/10 text-primary px-3 py-1.5 rounded-full text-sm font-semibold">
+            ₹{tree.price_per_day}/day
+          </span>
+          {tree.price_per_season && (
+            <span className="inline-flex items-center bg-amber-50 text-amber-700 px-3 py-1.5 rounded-full text-sm font-semibold">
+              ₹{tree.price_per_season.toLocaleString()}/season
+            </span>
+          )}
         </div>
-        <p className="text-xs text-gray-400 mt-4">
+        {tree.min_quantity > 1 && (
+          <p className="text-xs text-blue-600 font-medium mt-2">Min {tree.min_quantity} trees guaranteed</p>
+        )}
+        <p className="text-xs text-gray-400 mt-3">
           Scan to rent this tree on The Rental Farm
         </p>
       </div>
