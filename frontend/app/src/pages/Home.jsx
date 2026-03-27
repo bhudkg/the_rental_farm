@@ -309,7 +309,7 @@ export default function Home() {
               Rent a Tree
             </Link>
             <Link to="/owner" className="px-6 py-2.5 border-2 border-white/40 text-white font-semibold rounded-xl hover:bg-white/10 transition-colors text-sm">
-              List Your Trees
+              Register Tree
             </Link>
           </div>
         </div>

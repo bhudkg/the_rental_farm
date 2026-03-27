@@ -45,8 +45,8 @@ class TreeBase(BaseModel):
     state: str | None = None
     latitude: float | None = None
     longitude: float | None = None
-    price_per_day: float
-    price_per_month: float
+    price_per_day: float = 0
+    price_per_month: float = 0
     price_per_season: float | None = None
     deposit: float = 0
     size: str | None = None
@@ -54,6 +54,7 @@ class TreeBase(BaseModel):
     available_quantity: int = 1
     maintenance_required: bool = False
     image_url: str | None = None
+    image_urls: list[str] = []
 
 
 class TreeCreate(TreeBase):
@@ -80,6 +81,7 @@ class TreeUpdate(BaseModel):
     available_quantity: int | None = None
     maintenance_required: bool | None = None
     image_url: str | None = None
+    image_urls: list[str] | None = None
 
 
 class TreeOut(TreeBase):

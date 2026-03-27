@@ -43,7 +43,7 @@ export default function BookingModal({ tree, startDate, endDate, totalPrice, dep
 
         <div className="flex gap-4">
           <img
-            src={tree.image_url}
+            src={tree.image_urls?.[0] || tree.image_url}
             alt={tree.name}
             className="w-20 h-20 rounded-xl object-cover"
           />

@@ -1,18 +1,12 @@
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import LocationPicker from '../../components/LocationPicker';
+import ImageUploader from '../../components/ImageUploader';
 import { createTree } from '../../services/api';
 
 const TYPES = ['mango', 'banana', 'orange', 'lemon', 'coconut', 'guava', 'apple', 'papaya', 'pomegranate', 'jackfruit', 'chiku'];
 const SIZES = ['Small (1-2 ft)', 'Medium (3-4 ft)', 'Large (5-6 ft)', 'Extra Large (7-8 ft)'];
 
-const INDIAN_STATES = [
-  'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa',
-  'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala',
-  'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland',
-  'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura',
-  'Uttar Pradesh', 'Uttarakhand', 'West Bengal', 'Jammu & Kashmir', 'Delhi',
-];
+const MIN_IMAGES = 2;
 
 export default function AddTree() {
   const navigate = useNavigate();
@@ -23,53 +17,36 @@ export default function AddTree() {
     name: '',
     type: 'mango',
     variety: '',
-    speciality: '',
     description: '',
     location: '',
-    city: '',
-    state: '',
-    latitude: '',
-    longitude: '',
-    price_per_day: '',
-    price_per_month: '',
-    price_per_season: '',
-    deposit: '',
-    size: 'Medium (3-4 ft)',
     min_quantity: 1,
-    available_quantity: 1,
-    maintenance_required: false,
-    image_url: '',
+    size: 'Medium (3-4 ft)',
+    image_urls: [],
   });
 
-  const update = (field) => (e) => {
-    const val = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
-    setForm((prev) => ({ ...prev, [field]: val }));
-  };
-
-  const handleLocationChange = useCallback(({ latitude, longitude }) => {
-    setForm((prev) => ({ ...prev, latitude, longitude }));
-  }, []);
+  const update = (field) => (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
+
+    if (form.image_urls.length < MIN_IMAGES) {
+      setError(`Please upload at least ${MIN_IMAGES} images of your tree.`);
+      return;
+    }
+
     setLoading(true);
     try {
       const payload = {
-        ...form,
-        price_per_day: parseFloat(form.price_per_day),
-        price_per_month: parseFloat(form.price_per_month),
-        price_per_season: form.price_per_season ? parseFloat(form.price_per_season) : null,
-        deposit: parseFloat(form.deposit || '0'),
-        min_quantity: parseInt(form.min_quantity, 10),
-        available_quantity: parseInt(form.available_quantity, 10),
+        name: form.name,
+        type: form.type,
         variety: form.variety || null,
-        speciality: form.speciality || null,
+        description: form.description || null,
         location: form.location || null,
-        city: form.city || null,
-        state: form.state || null,
-        latitude: form.latitude ? parseFloat(form.latitude) : null,
-        longitude: form.longitude ? parseFloat(form.longitude) : null,
+        min_quantity: parseInt(form.min_quantity, 10),
+        size: form.size,
+        image_urls: form.image_urls,
+        image_url: form.image_urls[0] || null,
       };
       const tree = await createTree(payload);
       navigate(`/owner/trees/${tree.id}/qr`);
@@ -96,6 +73,22 @@ export default function AddTree() {
       <p className="text-gray-500 mb-8">Fill in the details to list your tree for rent.</p>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Images */}
+        <fieldset className="space-y-3">
+          <legend className="text-xs font-bold text-gray-400 uppercase tracking-wider">Tree Images *</legend>
+          <p className="text-xs text-gray-400">Upload at least {MIN_IMAGES} clear photos. The first image will be the cover.</p>
+          <ImageUploader
+            value={form.image_urls}
+            onChange={(updater) =>
+              setForm((prev) => ({
+                ...prev,
+                image_urls: typeof updater === 'function' ? updater(prev.image_urls) : updater,
+              }))
+            }
+            minCount={MIN_IMAGES}
+          />
+        </fieldset>
+
         {/* Basic info */}
         <fieldset className="space-y-4">
           <legend className="text-xs font-bold text-gray-400 uppercase tracking-wider">Basic Info</legend>
@@ -115,80 +108,34 @@ export default function AddTree() {
               </select>
             </div>
             <div>
-              <label className={labelClass}>Variety / Breed</label>
+              <label className={labelClass}>Variety</label>
               <input type="text" value={form.variety} onChange={update('variety')} placeholder="e.g. Alphonso (Hapus)" className={inputClass} />
             </div>
           </div>
 
           <div>
-            <label className={labelClass}>Speciality</label>
-            <input type="text" value={form.speciality} onChange={update('speciality')} placeholder="What makes this tree special?" className={inputClass} />
-          </div>
-
-          <div>
             <label className={labelClass}>Description</label>
-            <textarea rows={3} value={form.description} onChange={update('description')} placeholder="Detailed description of your tree..." className={`${inputClass} resize-none`} />
+            <textarea rows={3} value={form.description} onChange={update('description')} placeholder="Tell renters about your tree..." className={`${inputClass} resize-none`} />
           </div>
         </fieldset>
 
         {/* Location */}
         <fieldset className="space-y-4">
           <legend className="text-xs font-bold text-gray-400 uppercase tracking-wider">Location</legend>
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <label className={labelClass}>Local Area</label>
-              <input type="text" value={form.location} onChange={update('location')} placeholder="Farm / Area name" className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>City *</label>
-              <input type="text" required value={form.city} onChange={update('city')} placeholder="Nearest city" className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>State *</label>
-              <select value={form.state} onChange={update('state')} required className={`${inputClass} bg-white`}>
-                <option value="">Select state</option>
-                {INDIAN_STATES.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <LocationPicker
-            city={form.city}
-            state={form.state}
-            latitude={form.latitude}
-            longitude={form.longitude}
-            onChange={handleLocationChange}
-          />
-        </fieldset>
-
-        {/* Pricing */}
-        <fieldset className="space-y-4">
-          <legend className="text-xs font-bold text-gray-400 uppercase tracking-wider">Pricing</legend>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div>
-              <label className={labelClass}>₹ / Day *</label>
-              <input type="number" step="0.01" required value={form.price_per_day} onChange={update('price_per_day')} placeholder="50" className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>₹ / Month *</label>
-              <input type="number" step="0.01" required value={form.price_per_month} onChange={update('price_per_month')} placeholder="1200" className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>₹ / Season</label>
-              <input type="number" step="0.01" value={form.price_per_season} onChange={update('price_per_season')} placeholder="4500" className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>Deposit (₹)</label>
-              <input type="number" step="0.01" value={form.deposit} onChange={update('deposit')} placeholder="500" className={inputClass} />
-            </div>
+          <div>
+            <label className={labelClass}>Location</label>
+            <input type="text" value={form.location} onChange={update('location')} placeholder="e.g. Ratnagiri, Maharashtra" className={inputClass} />
           </div>
         </fieldset>
 
         {/* Details */}
         <fieldset className="space-y-4">
           <legend className="text-xs font-bold text-gray-400 uppercase tracking-wider">Details</legend>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={labelClass}>Min Quantity Guarantee</label>
+              <input type="number" min="1" value={form.min_quantity} onChange={update('min_quantity')} className={inputClass} />
+            </div>
             <div>
               <label className={labelClass}>Size</label>
               <select value={form.size} onChange={update('size')} className={`${inputClass} bg-white`}>
@@ -197,25 +144,7 @@ export default function AddTree() {
                 ))}
               </select>
             </div>
-            <div>
-              <label className={labelClass}>Min Quantity Guarantee</label>
-              <input type="number" min="1" value={form.min_quantity} onChange={update('min_quantity')} className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>Available Quantity</label>
-              <input type="number" min="1" value={form.available_quantity} onChange={update('available_quantity')} className={inputClass} />
-            </div>
           </div>
-
-          <div>
-            <label className={labelClass}>Image URL</label>
-            <input type="url" value={form.image_url} onChange={update('image_url')} placeholder="https://..." className={inputClass} />
-          </div>
-
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" checked={form.maintenance_required} onChange={update('maintenance_required')} className="w-4 h-4 text-primary rounded border-gray-300 focus:ring-primary" />
-            <span className="text-sm text-gray-700">We provide maintenance (care handled for renters)</span>
-          </label>
         </fieldset>
 
         {error && (

@@ -105,7 +105,7 @@ export default function Navbar() {
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                 }`}
               >
-                List Your Trees
+                Register Tree
               </Link>
             </div>
 
@@ -226,7 +226,7 @@ export default function Navbar() {
               onClick={() => setMobileOpen(false)}
               className="flex-1 text-center px-4 py-2.5 rounded-xl text-sm font-bold border-2 border-primary text-primary"
             >
-              List Your Trees
+              Register Tree
             </Link>
           </div>
           {token ? (

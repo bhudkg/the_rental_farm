@@ -6,7 +6,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from database import Base, SessionLocal, engine, get_db
-from routes import auth, availability, orders, owner, trees
+from routes import auth, availability, images, orders, owner, trees
 from seed import seed_trees
 
 import models  # noqa: F401 — ensures models are registered with Base
@@ -38,6 +38,7 @@ app.include_router(trees.router)
 app.include_router(availability.router)
 app.include_router(orders.router)
 app.include_router(owner.router)
+app.include_router(images.router)
 
 
 @app.get("/api")

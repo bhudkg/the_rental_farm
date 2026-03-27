@@ -82,7 +82,7 @@ export default function OrderDetail() {
       {order.tree && (
         <div className="flex gap-4 mb-8">
           <img
-            src={order.tree.image_url}
+            src={order.tree.image_urls?.[0] || order.tree.image_url}
             alt={order.tree.name}
             className="w-24 h-24 rounded-xl object-cover"
           />

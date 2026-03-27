@@ -1,8 +1,8 @@
 import uuid
 from datetime import date, datetime
 
-from sqlalchemy import Boolean, Date, DateTime, Float, ForeignKey, Integer, String, func
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Boolean, Date, DateTime, Float, ForeignKey, Integer, String, Text, func
+from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database import Base
@@ -41,8 +41,8 @@ class Tree(Base):
     longitude: Mapped[float | None] = mapped_column(Float, nullable=True)
 
     # Pricing
-    price_per_day: Mapped[float] = mapped_column(Float, nullable=False)
-    price_per_month: Mapped[float] = mapped_column(Float, nullable=False)
+    price_per_day: Mapped[float] = mapped_column(Float, nullable=False, default=0)
+    price_per_month: Mapped[float] = mapped_column(Float, nullable=False, default=0)
     price_per_season: Mapped[float | None] = mapped_column(Float, nullable=True)
     deposit: Mapped[float] = mapped_column(Float, nullable=False, default=0)
 
@@ -52,6 +52,7 @@ class Tree(Base):
     available_quantity: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     maintenance_required: Mapped[bool] = mapped_column(Boolean, default=False)
     image_url: Mapped[str] = mapped_column(String(500), nullable=True)
+    image_urls: Mapped[list[str] | None] = mapped_column(ARRAY(String(500)), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     owner: Mapped["User | None"] = relationship(back_populates="listed_trees")

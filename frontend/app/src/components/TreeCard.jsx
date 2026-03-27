@@ -25,7 +25,7 @@ export default function TreeCard({ tree }) {
       {/* Image */}
       <div className="aspect-[4/3] overflow-hidden bg-gray-100 relative">
         <img
-          src={tree.image_url || PLACEHOLDER_IMG}
+          src={tree.image_urls?.[0] || tree.image_url || PLACEHOLDER_IMG}
           alt={tree.name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           loading="lazy"

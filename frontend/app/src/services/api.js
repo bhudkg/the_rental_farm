@@ -76,6 +76,11 @@ export const login = (data) => api.post('/auth/login', data).then((r) => r.data)
 
 export const fetchMe = () => api.get('/auth/me').then((r) => r.data);
 
+// ── Images ──
+
+export const storeImageUrl = (imageUrl) =>
+  api.post('/upload-image', { image_url: imageUrl }).then((r) => r.data);
+
 // ── Owner ──
 
 export const fetchOwnerTrees = () => api.get('/owner/trees').then((r) => r.data);

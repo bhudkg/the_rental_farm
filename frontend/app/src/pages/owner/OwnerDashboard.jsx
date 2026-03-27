@@ -58,7 +58,7 @@ export default function OwnerDashboard() {
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
           <div className="bg-white border border-gray-100 rounded-2xl p-5">
-            <p className="text-sm text-gray-400 mb-1">Listed Trees</p>
+            <p className="text-sm text-gray-400 mb-1">Registered Trees</p>
             <p className="text-3xl font-bold text-gray-900">{stats.total_trees}</p>
           </div>
           <div className="bg-white border border-gray-100 rounded-2xl p-5">
@@ -66,7 +66,7 @@ export default function OwnerDashboard() {
             <p className="text-3xl font-bold text-gray-900">{stats.total_orders}</p>
           </div>
           <div className="bg-white border border-gray-100 rounded-2xl p-5">
-            <p className="text-sm text-gray-400 mb-1">Active Rentals</p>
+            <p className="text-sm text-gray-400 mb-1">Active Rental Trees</p>
             <p className="text-3xl font-bold text-primary">{stats.active_orders}</p>
           </div>
           <div className="bg-white border border-gray-100 rounded-2xl p-5">
@@ -88,7 +88,7 @@ export default function OwnerDashboard() {
             </svg>
           </div>
           <div>
-            <h3 className="font-semibold text-gray-900">My Trees</h3>
+            <h3 className="font-semibold text-gray-900">Registered Trees</h3>
             <p className="text-sm text-gray-500">Manage your listed trees and QR codes</p>
           </div>
         </Link>
@@ -124,7 +124,7 @@ export default function OwnerDashboard() {
               >
                 {order.tree && (
                   <img
-                    src={order.tree.image_url}
+                    src={order.tree.image_urls?.[0] || order.tree.image_url}
                     alt={order.tree.name}
                     className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
                   />

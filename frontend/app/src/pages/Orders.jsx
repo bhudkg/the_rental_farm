@@ -63,7 +63,7 @@ export default function Orders() {
               <div className="flex items-start gap-4">
                 {order.tree && (
                   <img
-                    src={order.tree.image_url}
+                    src={order.tree.image_urls?.[0] || order.tree.image_url}
                     alt={order.tree.name}
                     className="w-16 h-16 rounded-xl object-cover flex-shrink-0"
                   />

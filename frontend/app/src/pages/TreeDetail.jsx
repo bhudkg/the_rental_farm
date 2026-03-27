@@ -11,6 +11,7 @@ export default function TreeDetail() {
   const { id } = useParams();
   const [tree, setTree] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [activeImg, setActiveImg] = useState(0);
 
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -79,14 +80,32 @@ export default function TreeDetail() {
       </Link>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-        {/* Image */}
-        <div className="aspect-square rounded-2xl overflow-hidden bg-gray-100">
-          <img
-            src={tree.image_url || PLACEHOLDER_IMG}
-            alt={tree.name}
-            className="w-full h-full object-cover"
-            onError={(e) => { e.target.src = PLACEHOLDER_IMG; }}
-          />
+        {/* Image gallery */}
+        <div className="space-y-3">
+          <div className="aspect-square rounded-2xl overflow-hidden bg-gray-100">
+            <img
+              src={(tree.image_urls?.[activeImg]) || tree.image_url || PLACEHOLDER_IMG}
+              alt={tree.name}
+              className="w-full h-full object-cover"
+              onError={(e) => { e.target.src = PLACEHOLDER_IMG; }}
+            />
+          </div>
+          {tree.image_urls?.length > 1 && (
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {tree.image_urls.map((url, idx) => (
+                <button
+                  key={url}
+                  type="button"
+                  onClick={() => setActiveImg(idx)}
+                  className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors ${
+                    idx === activeImg ? 'border-primary' : 'border-transparent hover:border-gray-300'
+                  }`}
+                >
+                  <img src={url} alt={`${tree.name} ${idx + 1}`} className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Details */}
