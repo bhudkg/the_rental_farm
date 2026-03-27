@@ -57,8 +57,6 @@ def create_tree(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_user),
 ):
-    if current_user.role != "owner":
-        raise HTTPException(status_code=403, detail="Only owners can list trees")
     data = body.model_dump()
     data["owner_id"] = current_user.id
     return crud.create_tree(db, data)

@@ -50,11 +50,6 @@ const useStore = create((set) => ({
     set({ user: null, token: null });
   },
 
-  isOwner: () => {
-    const state = useStore.getState();
-    return state.user?.role === 'owner';
-  },
-
   setSelectedTree: (tree) => set({ selectedTree: tree }),
   setStartDate: (d) => set({ startDate: d }),
   setEndDate: (d) => set({ endDate: d }),

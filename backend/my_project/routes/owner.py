@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 import crud
@@ -10,16 +10,10 @@ from schemas import OrderOut, TreeOut
 router = APIRouter(prefix="/api/owner", tags=["owner"])
 
 
-def _require_owner(current_user: User = Depends(require_user)) -> User:
-    if current_user.role != "owner":
-        raise HTTPException(status_code=403, detail="Owner access required")
-    return current_user
-
-
 @router.get("/trees", response_model=list[TreeOut])
 def my_trees(
     db: Session = Depends(get_db),
-    owner: User = Depends(_require_owner),
+    owner: User = Depends(require_user),
 ):
     return crud.get_trees_by_owner(db, owner.id)
 
@@ -27,7 +21,7 @@ def my_trees(
 @router.get("/orders", response_model=list[OrderOut])
 def my_tree_orders(
     db: Session = Depends(get_db),
-    owner: User = Depends(_require_owner),
+    owner: User = Depends(require_user),
 ):
     return crud.get_orders_for_owner_trees(db, owner.id)
 
@@ -35,7 +29,7 @@ def my_tree_orders(
 @router.get("/stats")
 def owner_stats(
     db: Session = Depends(get_db),
-    owner: User = Depends(_require_owner),
+    owner: User = Depends(require_user),
 ):
     trees = crud.get_trees_by_owner(db, owner.id)
     orders = crud.get_orders_for_owner_trees(db, owner.id)

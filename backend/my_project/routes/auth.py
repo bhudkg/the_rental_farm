@@ -12,15 +12,12 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 @router.post("/register", response_model=Token, status_code=status.HTTP_201_CREATED)
 def register(body: UserCreate, db: Session = Depends(get_db)):
-    if body.role not in ("renter", "owner"):
-        raise HTTPException(status_code=400, detail="Role must be 'renter' or 'owner'")
     if crud.get_user_by_email(db, body.email):
         raise HTTPException(status_code=400, detail="Email already registered")
     user = crud.create_user(db, {
         "name": body.name,
         "email": body.email,
         "password_hash": hash_password(body.password),
-        "role": body.role,
     })
     return {
         "access_token": create_access_token(user.id),

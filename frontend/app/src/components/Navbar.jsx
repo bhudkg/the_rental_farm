@@ -8,14 +8,13 @@ export default function Navbar() {
   const { token, user, logout } = useStore();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const isOwner = user?.role === 'owner';
   const onOwnerPages = location.pathname.startsWith('/owner');
 
   const renterLinks = [
     { to: '/', label: 'Home' },
     { to: '/trees', label: 'Browse Trees' },
     ...(token ? [{ to: '/orders', label: 'My Orders' }] : []),
-    { to: '/owner', label: 'List Your Trees' },
+    ...(token ? [{ to: '/owner', label: 'List Your Trees' }] : []),
   ];
 
   const ownerLinks = [
@@ -24,7 +23,7 @@ export default function Navbar() {
     { to: '/owner/trees/new', label: 'Add Tree' },
   ];
 
-  const links = token && isOwner && onOwnerPages ? ownerLinks : renterLinks;
+  const links = token && onOwnerPages ? ownerLinks : renterLinks;
 
   const isActive = (path) => location.pathname === path;
 
@@ -38,7 +37,7 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to={token && isOwner ? '/owner' : '/'} className="flex items-center gap-2 font-bold text-xl text-primary">
+          <Link to="/" className="flex items-center gap-2 font-bold text-xl text-primary">
             <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
@@ -61,13 +60,12 @@ export default function Navbar() {
               </Link>
             ))}
 
-            {/* View switcher for owners */}
-            {token && isOwner && (
+            {token && (
               <Link
                 to={onOwnerPages ? '/trees' : '/owner'}
                 className="ml-1 px-3 py-1.5 text-xs font-semibold rounded-full border transition-colors border-gray-200 hover:border-primary hover:text-primary text-gray-500"
               >
-                {onOwnerPages ? 'Browse as Renter' : 'Owner Dashboard'}
+                {onOwnerPages ? 'Browse Trees' : 'My Listings'}
               </Link>
             )}
 
@@ -75,11 +73,6 @@ export default function Navbar() {
               <div className="flex items-center gap-2 ml-2">
                 <span className="text-xs text-gray-400 hidden lg:block">
                   {user?.name}
-                  <span className={`ml-1.5 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${
-                    isOwner ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
-                  }`}>
-                    {user?.role}
-                  </span>
                 </span>
                 <button
                   onClick={handleLogout}
@@ -129,13 +122,13 @@ export default function Navbar() {
               {l.label}
             </Link>
           ))}
-          {token && isOwner && (
+          {token && (
             <Link
               to={onOwnerPages ? '/trees' : '/owner'}
               onClick={() => setMobileOpen(false)}
               className="block px-4 py-2 rounded-lg text-sm font-medium mt-1 text-gray-500"
             >
-              {onOwnerPages ? 'Browse as Renter' : 'Owner Dashboard'}
+              {onOwnerPages ? 'Browse Trees' : 'My Listings'}
             </Link>
           )}
           {token ? (
