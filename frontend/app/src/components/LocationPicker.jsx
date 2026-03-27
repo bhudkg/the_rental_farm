@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import { geocodeAddress } from '../services/api';
+import { geocodeAddress, reverseGeocode } from '../services/api';
 import MapplsMap from './MapplsMap';
 
-export default function LocationPicker({ city, state, latitude, longitude, onChange }) {
+export default function LocationPicker({ city, state, latitude, longitude, onChange, onAddressChange }) {
   const [detecting, setDetecting] = useState(false);
   const [geocoding, setGeocoding] = useState(false);
   const [error, setError] = useState(null);
@@ -19,11 +19,17 @@ export default function LocationPicker({ city, state, latitude, longitude, onCha
     setDetecting(true);
     setError(null);
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        onChange({
-          latitude: pos.coords.latitude,
-          longitude: pos.coords.longitude,
-        });
+      async (pos) => {
+        const detectedLat = pos.coords.latitude;
+        const detectedLng = pos.coords.longitude;
+        onChange({ latitude: detectedLat, longitude: detectedLng });
+
+        if (onAddressChange) {
+          const address = await reverseGeocode(detectedLat, detectedLng);
+          if (address) {
+            onAddressChange(address);
+          }
+        }
         setDetecting(false);
       },
       (err) => {
@@ -37,7 +43,7 @@ export default function LocationPicker({ city, state, latitude, longitude, onCha
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
     );
-  }, [onChange]);
+  }, [onChange, onAddressChange]);
 
   useEffect(() => {
     if (hasCoords) return;

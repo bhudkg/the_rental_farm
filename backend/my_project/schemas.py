@@ -1,7 +1,7 @@
 import uuid
 from datetime import date, datetime
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, field_validator
 
 
 # ── User ──
@@ -55,6 +55,11 @@ class TreeBase(BaseModel):
     maintenance_required: bool = False
     image_url: str | None = None
     image_urls: list[str] = []
+
+    @field_validator("image_urls", mode="before")
+    @classmethod
+    def coerce_image_urls(cls, v):
+        return v if v is not None else []
 
 
 class TreeCreate(TreeBase):

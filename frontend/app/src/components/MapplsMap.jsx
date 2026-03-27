@@ -154,42 +154,58 @@ function MapplsMapInner({
   }, [mapId]);
 
   useEffect(() => {
+    if (!loaded || !mapRef.current) return;
+    if (center) {
+      try { mapRef.current.setCenter(center); } catch { /* not available */ }
+    }
+  }, [loaded, center]);
+
+  useEffect(() => {
     if (!loaded || !mapRef.current || !sdk) return;
 
-    markerRefs.current.forEach((m) => {
-      try { m.remove?.(); } catch { /* ok */ }
-    });
-    markerRefs.current = [];
+    const addMarkers = () => {
+      markerRefs.current.forEach((m) => {
+        try { m.remove?.(); } catch { /* ok */ }
+      });
+      markerRefs.current = [];
 
-    const validMarkers = markers.filter((m) => m.lat != null && m.lng != null);
-    if (validMarkers.length === 0) return;
+      const validMarkers = markers.filter((m) => m.lat != null && m.lng != null);
+      if (validMarkers.length === 0) return;
 
-    validMarkers.forEach((m) => {
-      try {
-        const marker = sdk.marker({
-          map: mapRef.current,
-          position: { lat: m.lat, lng: m.lng },
-          popupHtml: m.popupHtml || `<div style="padding:4px;font-size:13px;"><strong>${m.name || 'Tree'}</strong></div>`,
-          popupOptions: { openPopup: false, autoClose: true, maxWidth: 250 },
-        });
+      validMarkers.forEach((m) => {
+        try {
+          const marker = sdk.marker({
+            map: mapRef.current,
+            position: { lat: m.lat, lng: m.lng },
+          });
+          if (marker) {
+            if (m.popupHtml) {
+              try {
+                marker.setPopup(m.popupHtml);
+              } catch { /* popup not supported in this SDK version */ }
+            }
+            if (onMarkerClick && typeof marker.addListener === 'function') {
+              marker.addListener('click', () => onMarkerClick(m));
+            }
+            markerRefs.current.push(marker);
+          }
+        } catch { /* skip bad marker */ }
+      });
 
-        if (onMarkerClick && marker && typeof marker.addListener === 'function') {
-          marker.addListener('click', () => onMarkerClick(m));
-        }
-        if (marker) markerRefs.current.push(marker);
-      } catch { /* skip bad marker */ }
-    });
+      if (validMarkers.length > 1 && !center) {
+        try {
+          const lats = validMarkers.map((m) => m.lat);
+          const lngs = validMarkers.map((m) => m.lng);
+          mapRef.current.fitBounds(
+            [[Math.min(...lats), Math.min(...lngs)], [Math.max(...lats), Math.max(...lngs)]],
+            { padding: 60, maxZoom: 14 },
+          );
+        } catch { /* fitBounds not always available */ }
+      }
+    };
 
-    if (validMarkers.length > 1 && !center) {
-      try {
-        const lats = validMarkers.map((m) => m.lat);
-        const lngs = validMarkers.map((m) => m.lng);
-        mapRef.current.fitBounds(
-          [[Math.min(...lats), Math.min(...lngs)], [Math.max(...lats), Math.max(...lngs)]],
-          { padding: 60, maxZoom: 14 },
-        );
-      } catch { /* fitBounds not always available */ }
-    }
+    const timer = setTimeout(addMarkers, 500);
+    return () => clearTimeout(timer);
   }, [loaded, markers, center, onMarkerClick]);
 
   if (error) {

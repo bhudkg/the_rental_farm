@@ -112,4 +112,23 @@ export const geocodeAddress = async (address) => {
   }
 };
 
+export const reverseGeocode = async (lat, lng) => {
+  if (lat == null || lng == null) return null;
+  try {
+    const res = await axios.get('https://nominatim.openstreetmap.org/reverse', {
+      params: { lat, lon: lng, format: 'json', 'accept-language': 'en' },
+      headers: { 'User-Agent': 'TheRentalFarm/1.0' },
+    });
+    const addr = res.data?.address;
+    if (!addr) return null;
+    return {
+      city: addr.city || addr.town || addr.state_district || addr.county || '',
+      state: addr.state || '',
+      area: addr.suburb || addr.village || addr.county || '',
+    };
+  } catch {
+    return null;
+  }
+};
+
 export default api;

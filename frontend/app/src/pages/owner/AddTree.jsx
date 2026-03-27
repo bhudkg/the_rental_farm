@@ -1,10 +1,19 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import ImageUploader from '../../components/ImageUploader';
+import LocationPicker from '../../components/LocationPicker';
 import { createTree } from '../../services/api';
 
 const TYPES = ['mango', 'banana', 'orange', 'lemon', 'coconut', 'guava', 'apple', 'papaya', 'pomegranate', 'jackfruit', 'chiku'];
 const SIZES = ['Small (1-2 ft)', 'Medium (3-4 ft)', 'Large (5-6 ft)', 'Extra Large (7-8 ft)'];
+
+const INDIAN_STATES = [
+  'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa',
+  'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala',
+  'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland',
+  'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura',
+  'Uttar Pradesh', 'Uttarakhand', 'West Bengal', 'Jammu & Kashmir', 'Delhi',
+];
 
 const MIN_IMAGES = 2;
 
@@ -19,12 +28,29 @@ export default function AddTree() {
     variety: '',
     description: '',
     location: '',
+    city: '',
+    state: '',
+    latitude: '',
+    longitude: '',
     min_quantity: 1,
     size: 'Medium (3-4 ft)',
     image_urls: [],
   });
 
   const update = (field) => (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }));
+
+  const handleLocationChange = useCallback(({ latitude, longitude }) => {
+    setForm((prev) => ({ ...prev, latitude, longitude }));
+  }, []);
+
+  const handleAddressChange = useCallback(({ city, state, area }) => {
+    setForm((prev) => ({
+      ...prev,
+      city: city || prev.city,
+      state: state || prev.state,
+      location: area || prev.location,
+    }));
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -43,6 +69,10 @@ export default function AddTree() {
         variety: form.variety || null,
         description: form.description || null,
         location: form.location || null,
+        city: form.city || null,
+        state: form.state || null,
+        latitude: form.latitude ? parseFloat(form.latitude) : null,
+        longitude: form.longitude ? parseFloat(form.longitude) : null,
         min_quantity: parseInt(form.min_quantity, 10),
         size: form.size,
         image_urls: form.image_urls,
@@ -122,10 +152,33 @@ export default function AddTree() {
         {/* Location */}
         <fieldset className="space-y-4">
           <legend className="text-xs font-bold text-gray-400 uppercase tracking-wider">Location</legend>
-          <div>
-            <label className={labelClass}>Location</label>
-            <input type="text" value={form.location} onChange={update('location')} placeholder="e.g. Ratnagiri, Maharashtra" className={inputClass} />
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className={labelClass}>Local Area</label>
+              <input type="text" value={form.location} onChange={update('location')} placeholder="Farm / Area name" className={inputClass} />
+            </div>
+            <div>
+              <label className={labelClass}>City *</label>
+              <input type="text" required value={form.city} onChange={update('city')} placeholder="Nearest city" className={inputClass} />
+            </div>
+            <div>
+              <label className={labelClass}>State *</label>
+              <select value={form.state} onChange={update('state')} required className={`${inputClass} bg-white`}>
+                <option value="">Select state</option>
+                {INDIAN_STATES.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </div>
           </div>
+          <LocationPicker
+            city={form.city}
+            state={form.state}
+            latitude={form.latitude}
+            longitude={form.longitude}
+            onChange={handleLocationChange}
+            onAddressChange={handleAddressChange}
+          />
         </fieldset>
 
         {/* Details */}
