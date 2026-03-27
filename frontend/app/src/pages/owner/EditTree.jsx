@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import LocationPicker from '../../components/LocationPicker';
 import { fetchTree, updateTree } from '../../services/api';
 
 const TYPES = ['mango', 'banana', 'orange', 'lemon', 'coconut', 'guava', 'apple', 'papaya', 'pomegranate', 'jackfruit', 'chiku'];
@@ -33,6 +34,8 @@ export default function EditTree() {
           location: tree.location || '',
           city: tree.city || '',
           state: tree.state || '',
+          latitude: tree.latitude ?? '',
+          longitude: tree.longitude ?? '',
           price_per_day: tree.price_per_day,
           price_per_month: tree.price_per_month,
           price_per_season: tree.price_per_season || '',
@@ -60,8 +63,12 @@ export default function EditTree() {
 
   const update = (field) => (e) => {
     const val = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
-    setForm({ ...form, [field]: val });
+    setForm((prev) => ({ ...prev, [field]: val }));
   };
+
+  const handleLocationChange = useCallback(({ latitude, longitude }) => {
+    setForm((prev) => ({ ...prev, latitude, longitude }));
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -81,6 +88,8 @@ export default function EditTree() {
         location: form.location || null,
         city: form.city || null,
         state: form.state || null,
+        latitude: form.latitude !== '' ? parseFloat(form.latitude) : null,
+        longitude: form.longitude !== '' ? parseFloat(form.longitude) : null,
       };
       await updateTree(id, payload);
       navigate('/owner/trees');
@@ -163,6 +172,13 @@ export default function EditTree() {
               </select>
             </div>
           </div>
+          <LocationPicker
+            city={form.city}
+            state={form.state}
+            latitude={form.latitude}
+            longitude={form.longitude}
+            onChange={handleLocationChange}
+          />
         </fieldset>
 
         {/* Pricing */}

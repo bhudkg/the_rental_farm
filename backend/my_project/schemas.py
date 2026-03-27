@@ -43,6 +43,8 @@ class TreeBase(BaseModel):
     location: str | None = None
     city: str | None = None
     state: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
     price_per_day: float
     price_per_month: float
     price_per_season: float | None = None
@@ -67,6 +69,8 @@ class TreeUpdate(BaseModel):
     location: str | None = None
     city: str | None = None
     state: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
     price_per_day: float | None = None
     price_per_month: float | None = None
     price_per_season: float | None = None

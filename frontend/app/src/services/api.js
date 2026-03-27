@@ -84,4 +84,27 @@ export const fetchOwnerOrders = () => api.get('/owner/orders').then((r) => r.dat
 
 export const fetchOwnerStats = () => api.get('/owner/stats').then((r) => r.data);
 
+// ── Geocoding ──
+
+const MAPPLS_TOKEN = import.meta.env.VITE_MAPPLS_TOKEN;
+
+export const geocodeAddress = async (address) => {
+  if (!address || !MAPPLS_TOKEN) return null;
+  try {
+    const res = await axios.get('https://search.mappls.com/search/address/geocode', {
+      params: { address, access_token: MAPPLS_TOKEN },
+    });
+    const place = res.data?.results?.[0] ?? res.data?.copResults ?? res.data?.[0];
+    if (place?.latitude && place?.longitude) {
+      return { lat: parseFloat(place.latitude), lng: parseFloat(place.longitude) };
+    }
+    if (place?.lat && place?.lng) {
+      return { lat: parseFloat(place.lat), lng: parseFloat(place.lng) };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+};
+
 export default api;

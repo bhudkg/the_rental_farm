@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import BookingModal from '../components/BookingModal';
 import DateRangePicker from '../components/DateRangePicker';
+import MapplsMap from '../components/MapplsMap';
 import { checkAvailability, fetchTree } from '../services/api';
 
 const PLACEHOLDER_IMG = 'https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=800&q=80';
@@ -109,6 +110,25 @@ export default function TreeDetail() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
               </svg>
               <span className="text-sm text-gray-500">{locationParts.join(', ')}</span>
+            </div>
+          )}
+
+          {/* Location Map */}
+          {tree.latitude && tree.longitude && (
+            <div className="mb-4">
+              <MapplsMap
+                center={[tree.latitude, tree.longitude]}
+                zoom={12}
+                height="220px"
+                mapId={`tree-detail-map-${tree.id}`}
+                markers={[{
+                  id: tree.id,
+                  lat: tree.latitude,
+                  lng: tree.longitude,
+                  name: tree.name,
+                  popupHtml: `<div style="padding:4px;font-size:13px;font-family:system-ui,sans-serif;"><strong>${tree.name}</strong><br/><span style="color:#666;">${locationParts.join(', ')}</span></div>`,
+                }]}
+              />
             </div>
           )}
 

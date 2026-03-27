@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import LocationPicker from '../../components/LocationPicker';
 import { createTree } from '../../services/api';
 
 const TYPES = ['mango', 'banana', 'orange', 'lemon', 'coconut', 'guava', 'apple', 'papaya', 'pomegranate', 'jackfruit', 'chiku'];
@@ -27,6 +28,8 @@ export default function AddTree() {
     location: '',
     city: '',
     state: '',
+    latitude: '',
+    longitude: '',
     price_per_day: '',
     price_per_month: '',
     price_per_season: '',
@@ -40,8 +43,12 @@ export default function AddTree() {
 
   const update = (field) => (e) => {
     const val = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
-    setForm({ ...form, [field]: val });
+    setForm((prev) => ({ ...prev, [field]: val }));
   };
+
+  const handleLocationChange = useCallback(({ latitude, longitude }) => {
+    setForm((prev) => ({ ...prev, latitude, longitude }));
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -61,6 +68,8 @@ export default function AddTree() {
         location: form.location || null,
         city: form.city || null,
         state: form.state || null,
+        latitude: form.latitude ? parseFloat(form.latitude) : null,
+        longitude: form.longitude ? parseFloat(form.longitude) : null,
       };
       const tree = await createTree(payload);
       navigate(`/owner/trees/${tree.id}/qr`);
@@ -144,6 +153,13 @@ export default function AddTree() {
               </select>
             </div>
           </div>
+          <LocationPicker
+            city={form.city}
+            state={form.state}
+            latitude={form.latitude}
+            longitude={form.longitude}
+            onChange={handleLocationChange}
+          />
         </fieldset>
 
         {/* Pricing */}

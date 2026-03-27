@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import MapplsMap from '../components/MapplsMap';
 import TreeCard from '../components/TreeCard';
 import { fetchTrees } from '../services/api';
 
@@ -28,9 +29,11 @@ const SORT_OPTIONS = [
 
 export default function Trees() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [trees, setTrees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [viewMode, setViewMode] = useState('list');
 
   const activeType = searchParams.get('type') || 'all';
   const [priceRange, setPriceRange] = useState(0);
@@ -253,17 +256,46 @@ export default function Trees() {
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-4">
             <p className="text-sm text-gray-500">{trees.length} results</p>
-            <div className="hidden lg:flex items-center gap-2">
-              <span className="text-xs text-gray-400">Sort:</span>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="px-2 py-1 bg-white border border-gray-200 rounded-lg text-xs text-gray-600 focus:ring-1 focus:ring-primary/20 focus:border-primary outline-none"
-              >
-                {SORT_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
+            <div className="flex items-center gap-3">
+              {/* View toggle */}
+              <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`p-1.5 rounded-md transition-colors ${
+                    viewMode === 'list' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-400 hover:text-gray-600'
+                  }`}
+                  title="List view"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => setViewMode('map')}
+                  className={`p-1.5 rounded-md transition-colors ${
+                    viewMode === 'map' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-400 hover:text-gray-600'
+                  }`}
+                  title="Map view"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m0 0l-3-3m3 3l3-3m-3 3V6.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                  </svg>
+                </button>
+              </div>
+              <div className="hidden lg:flex items-center gap-2">
+                <span className="text-xs text-gray-400">Sort:</span>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="px-2 py-1 bg-white border border-gray-200 rounded-lg text-xs text-gray-600 focus:ring-1 focus:ring-primary/20 focus:border-primary outline-none"
+                >
+                  {SORT_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 
@@ -287,6 +319,28 @@ export default function Trees() {
                 Clear all & show everything
               </button>
             </div>
+          ) : viewMode === 'map' ? (
+            <MapplsMap
+              height="550px"
+              mapId="trees-map"
+              markers={trees
+                .filter((t) => t.latitude && t.longitude)
+                .map((t) => ({
+                  id: t.id,
+                  lat: t.latitude,
+                  lng: t.longitude,
+                  name: t.name,
+                  popupHtml: `
+                    <div style="padding:8px;min-width:180px;font-family:system-ui,sans-serif;">
+                      <strong style="font-size:14px;display:block;margin-bottom:4px;">${t.name}</strong>
+                      <span style="font-size:12px;color:#666;">${t.type} ${t.variety ? '&middot; ' + t.variety : ''}</span><br/>
+                      <span style="font-size:12px;color:#666;">${[t.city, t.state].filter(Boolean).join(', ')}</span><br/>
+                      <span style="font-size:14px;font-weight:600;color:#16a34a;">&#8377;${t.price_per_day}/day</span><br/>
+                      <a href="/trees/${t.id}" style="display:inline-block;margin-top:6px;font-size:12px;color:#2563eb;text-decoration:underline;">View Details &rarr;</a>
+                    </div>`,
+                }))}
+              onMarkerClick={(m) => navigate(`/trees/${m.id}`)}
+            />
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {trees.map((tree) => (

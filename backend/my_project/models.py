@@ -37,6 +37,8 @@ class Tree(Base):
     location: Mapped[str | None] = mapped_column(String(200), nullable=True)
     city: Mapped[str | None] = mapped_column(String(100), nullable=True)
     state: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    latitude: Mapped[float | None] = mapped_column(Float, nullable=True)
+    longitude: Mapped[float | None] = mapped_column(Float, nullable=True)
 
     # Pricing
     price_per_day: Mapped[float] = mapped_column(Float, nullable=False)
