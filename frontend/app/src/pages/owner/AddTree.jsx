@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import ImageUploader from '../../components/ImageUploader';
 import LocationPicker from '../../components/LocationPicker';
@@ -17,6 +17,90 @@ const INDIAN_STATES = [
 ];
 
 const MIN_IMAGES = 2;
+
+const STEPS = [
+  { key: 'images', label: 'Photos', icon: CameraIcon },
+  { key: 'basic', label: 'Basic Info', icon: TreeIcon },
+  { key: 'location', label: 'Location', icon: MapPinIcon },
+  { key: 'pricing', label: 'Pricing', icon: CurrencyIcon },
+  { key: 'details', label: 'Details', icon: ClipboardIcon },
+];
+
+function CameraIcon({ className }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" />
+    </svg>
+  );
+}
+
+function TreeIcon({ className }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 21v-6m0 0c-3.5 0-6-2.5-6-6 0-2.5 1.5-4.5 3-5.5C10 2.5 11 2 12 2s2 .5 3 1.5c1.5 1 3 3 3 5.5 0 3.5-2.5 6-6 6z" />
+    </svg>
+  );
+}
+
+function MapPinIcon({ className }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+    </svg>
+  );
+}
+
+function CurrencyIcon({ className }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />
+    </svg>
+  );
+}
+
+function ClipboardIcon({ className }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15a2.25 2.25 0 012.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25z" />
+    </svg>
+  );
+}
+
+function CheckCircleIcon({ className }) {
+  return (
+    <svg className={className} fill="currentColor" viewBox="0 0 20 20">
+      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
+    </svg>
+  );
+}
+
+function SectionCard({ stepIndex, icon: Icon, title, subtitle, children, completed }) {
+  return (
+    <div className={`relative bg-white rounded-2xl border transition-all duration-200 ${completed ? 'border-primary/30 shadow-sm shadow-primary/5' : 'border-gray-200 shadow-sm'}`}>
+      <div className="flex items-center gap-3.5 px-5 py-4 border-b border-gray-100">
+        <div className={`flex items-center justify-center w-9 h-9 rounded-xl ${completed ? 'bg-primary/10' : 'bg-gray-100'} transition-colors`}>
+          {completed
+            ? <CheckCircleIcon className="w-5 h-5 text-primary" />
+            : <Icon className={`w-5 h-5 ${completed ? 'text-primary' : 'text-gray-400'}`} />
+          }
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-bold text-gray-300 uppercase tracking-wider">Step {stepIndex + 1}</span>
+            {completed && <span className="text-[10px] font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">Done</span>}
+          </div>
+          <h3 className="text-sm font-semibold text-gray-800">{title}</h3>
+        </div>
+      </div>
+      <div className="px-5 py-5 space-y-4">
+        {subtitle && <p className="text-xs text-gray-400 -mt-1">{subtitle}</p>}
+        {children}
+      </div>
+    </div>
+  );
+}
 
 export default function AddTree() {
   const navigate = useNavigate();
@@ -40,6 +124,17 @@ export default function AddTree() {
     size: 'Medium (3-4 ft)',
     image_urls: [],
   });
+
+  const completedSteps = useMemo(() => ({
+    images: form.image_urls.length >= MIN_IMAGES,
+    basic: !!form.name && !!form.type,
+    location: !!form.city && !!form.state,
+    pricing: !!form.price_per_season && !!form.season_start && !!form.season_end,
+    details: !!form.min_quantity,
+  }), [form]);
+
+  const completedCount = Object.values(completedSteps).filter(Boolean).length;
+  const progressPct = Math.round((completedCount / STEPS.length) * 100);
 
   const update = (field) => (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }));
 
@@ -94,26 +189,67 @@ export default function AddTree() {
     }
   };
 
-  const inputClass = 'w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none';
-  const labelClass = 'block text-sm font-medium text-gray-700 mb-1';
+  const inputClass =
+    'w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200 rounded-xl text-sm text-gray-800 placeholder:text-gray-400 focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white outline-none transition-all duration-150';
+  const labelClass = 'block text-sm font-medium text-gray-600 mb-1.5';
+  const selectClass = `${inputClass} bg-white appearance-none cursor-pointer`;
 
   return (
-    <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      <Link to="/owner/trees" className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-6">
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-        </svg>
-        Back to my trees
-      </Link>
+    <div className="min-h-screen bg-linear-to-b from-gray-50 to-white">
+      {/* Header banner */}
+      <div className="bg-linear-to-r from-primary to-emerald-600 px-4 sm:px-6 lg:px-8 pt-8 pb-16">
+        <div className="max-w-2xl mx-auto">
+          <Link
+            to="/owner/trees"
+            className="inline-flex items-center gap-1.5 text-sm text-white/80 hover:text-white transition-colors mb-5"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+            Back to my trees
+          </Link>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white mb-1.5">Add New Tree</h1>
+          <p className="text-sm text-white/70">List your tree for rent in a few simple steps.</p>
+        </div>
+      </div>
 
-      <h1 className="text-2xl font-bold text-gray-900 mb-2">Add New Tree</h1>
-      <p className="text-gray-500 mb-8">Fill in the details to list your tree for rent.</p>
+      {/* Progress bar */}
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8">
+        <div className="bg-white rounded-2xl shadow-lg shadow-gray-200/60 border border-gray-100 p-4 sm:p-5">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-semibold text-gray-500">Progress</span>
+            <span className="text-xs font-bold text-primary">{completedCount}/{STEPS.length} completed</span>
+          </div>
+          <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-linear-to-r from-primary to-emerald-400 rounded-full transition-all duration-500 ease-out"
+              style={{ width: `${progressPct}%` }}
+            />
+          </div>
+          <div className="hidden sm:grid grid-cols-5 gap-1 mt-3">
+            {STEPS.map((step, i) => {
+              const done = completedSteps[step.key];
+              return (
+                <div key={step.key} className="flex items-center gap-1.5 text-[11px]">
+                  <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${done ? 'bg-primary' : 'bg-gray-300'}`} />
+                  <span className={done ? 'text-primary font-medium' : 'text-gray-400'}>{step.label}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Images */}
-        <fieldset className="space-y-3">
-          <legend className="text-xs font-bold text-gray-400 uppercase tracking-wider">Tree Images *</legend>
-          <p className="text-xs text-gray-400">Upload at least {MIN_IMAGES} clear photos. The first image will be the cover.</p>
+      {/* Form */}
+      <form onSubmit={handleSubmit} className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
+        {/* 1. Images */}
+        <SectionCard
+          stepIndex={0}
+          icon={CameraIcon}
+          title="Tree Photos"
+          subtitle={`Upload at least ${MIN_IMAGES} clear photos. The first image will be the cover.`}
+          completed={completedSteps.images}
+        >
           <ImageUploader
             value={form.image_urls}
             onChange={(updater) =>
@@ -124,21 +260,31 @@ export default function AddTree() {
             }
             minCount={MIN_IMAGES}
           />
-        </fieldset>
+        </SectionCard>
 
-        {/* Basic info */}
-        <fieldset className="space-y-4">
-          <legend className="text-xs font-bold text-gray-400 uppercase tracking-wider">Basic Info</legend>
-
+        {/* 2. Basic Info */}
+        <SectionCard
+          stepIndex={1}
+          icon={TreeIcon}
+          title="Basic Information"
+          completed={completedSteps.basic}
+        >
           <div>
-            <label className={labelClass}>Tree Name *</label>
-            <input type="text" required value={form.name} onChange={update('name')} placeholder="e.g. Alphonso Mango Tree" className={inputClass} />
+            <label className={labelClass}>Tree Name <span className="text-red-400">*</span></label>
+            <input
+              type="text"
+              required
+              value={form.name}
+              onChange={update('name')}
+              placeholder="e.g. Alphonso Mango Tree"
+              className={inputClass}
+            />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className={labelClass}>Fruit Type *</label>
-              <select value={form.type} onChange={update('type')} className={`${inputClass} bg-white`}>
+              <label className={labelClass}>Fruit Type <span className="text-red-400">*</span></label>
+              <select value={form.type} onChange={update('type')} className={selectClass}>
                 {TYPES.map((t) => (
                   <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
                 ))}
@@ -146,31 +292,60 @@ export default function AddTree() {
             </div>
             <div>
               <label className={labelClass}>Variety</label>
-              <input type="text" value={form.variety} onChange={update('variety')} placeholder="e.g. Alphonso (Hapus)" className={inputClass} />
+              <input
+                type="text"
+                value={form.variety}
+                onChange={update('variety')}
+                placeholder="e.g. Alphonso (Hapus)"
+                className={inputClass}
+              />
             </div>
           </div>
 
           <div>
             <label className={labelClass}>Description</label>
-            <textarea rows={3} value={form.description} onChange={update('description')} placeholder="Tell renters about your tree..." className={`${inputClass} resize-none`} />
+            <textarea
+              rows={3}
+              value={form.description}
+              onChange={update('description')}
+              placeholder="Tell renters about your tree — age, health, expected yield..."
+              className={`${inputClass} resize-none`}
+            />
           </div>
-        </fieldset>
+        </SectionCard>
 
-        {/* Location */}
-        <fieldset className="space-y-4">
-          <legend className="text-xs font-bold text-gray-400 uppercase tracking-wider">Location</legend>
-          <div className="grid grid-cols-3 gap-4">
+        {/* 3. Location */}
+        <SectionCard
+          stepIndex={2}
+          icon={MapPinIcon}
+          title="Location"
+          completed={completedSteps.location}
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className={labelClass}>Local Area</label>
-              <input type="text" value={form.location} onChange={update('location')} placeholder="Farm / Area name" className={inputClass} />
+              <input
+                type="text"
+                value={form.location}
+                onChange={update('location')}
+                placeholder="Farm / Area name"
+                className={inputClass}
+              />
             </div>
             <div>
-              <label className={labelClass}>City *</label>
-              <input type="text" required value={form.city} onChange={update('city')} placeholder="Nearest city" className={inputClass} />
+              <label className={labelClass}>City <span className="text-red-400">*</span></label>
+              <input
+                type="text"
+                required
+                value={form.city}
+                onChange={update('city')}
+                placeholder="Nearest city"
+                className={inputClass}
+              />
             </div>
             <div>
-              <label className={labelClass}>State *</label>
-              <select value={form.state} onChange={update('state')} required className={`${inputClass} bg-white`}>
+              <label className={labelClass}>State <span className="text-red-400">*</span></label>
+              <select value={form.state} onChange={update('state')} required className={selectClass}>
                 <option value="">Select state</option>
                 {INDIAN_STATES.map((s) => (
                   <option key={s} value={s}>{s}</option>
@@ -186,15 +361,19 @@ export default function AddTree() {
             onChange={handleLocationChange}
             onAddressChange={handleAddressChange}
           />
-        </fieldset>
+        </SectionCard>
 
-        {/* Season & Pricing */}
-        <fieldset className="space-y-4">
-          <legend className="text-xs font-bold text-gray-400 uppercase tracking-wider">Season &amp; Pricing</legend>
-          <div className="grid grid-cols-2 gap-4">
+        {/* 4. Season & Pricing */}
+        <SectionCard
+          stepIndex={3}
+          icon={CurrencyIcon}
+          title="Season & Pricing"
+          completed={completedSteps.pricing}
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className={labelClass}>Season Start *</label>
-              <select value={form.season_start} onChange={update('season_start')} required className={`${inputClass} bg-white`}>
+              <label className={labelClass}>Season Start <span className="text-red-400">*</span></label>
+              <select value={form.season_start} onChange={update('season_start')} required className={selectClass}>
                 <option value="">Select month</option>
                 {MONTHS.map((m, i) => (
                   <option key={m} value={i + 1}>{m}</option>
@@ -202,8 +381,8 @@ export default function AddTree() {
               </select>
             </div>
             <div>
-              <label className={labelClass}>Season End *</label>
-              <select value={form.season_end} onChange={update('season_end')} required className={`${inputClass} bg-white`}>
+              <label className={labelClass}>Season End <span className="text-red-400">*</span></label>
+              <select value={form.season_end} onChange={update('season_end')} required className={selectClass}>
                 <option value="">Select month</option>
                 {MONTHS.map((m, i) => (
                   <option key={m} value={i + 1}>{m}</option>
@@ -211,55 +390,119 @@ export default function AddTree() {
               </select>
             </div>
           </div>
+
           {form.season_start && form.season_end && (
-            <p className="text-xs text-gray-500 bg-gray-50 rounded-lg px-3 py-2">
-              Season: <span className="font-medium text-gray-700">{MONTHS[form.season_start - 1]}</span> to <span className="font-medium text-gray-700">{MONTHS[form.season_end - 1]}</span>
-            </p>
+            <div className="flex items-center gap-2 text-xs bg-primary/5 border border-primary/10 rounded-xl px-4 py-2.5">
+              <svg className="w-4 h-4 text-primary shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+              </svg>
+              <span className="text-gray-600">
+                Season: <span className="font-semibold text-gray-800">{MONTHS[form.season_start - 1]}</span>
+                {' '}&rarr;{' '}
+                <span className="font-semibold text-gray-800">{MONTHS[form.season_end - 1]}</span>
+              </span>
+            </div>
           )}
-          <div className="grid grid-cols-2 gap-4">
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className={labelClass}>Price per Season (₹) *</label>
-              <input type="number" step="0.01" required value={form.price_per_season} onChange={update('price_per_season')} placeholder="e.g. 4500" className={inputClass} />
+              <label className={labelClass}>Price per Season <span className="text-red-400">*</span></label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-gray-400 font-medium">₹</span>
+                <input
+                  type="number"
+                  step="0.01"
+                  required
+                  value={form.price_per_season}
+                  onChange={update('price_per_season')}
+                  placeholder="4,500"
+                  className={`${inputClass} pl-8`}
+                />
+              </div>
             </div>
             <div>
-              <label className={labelClass}>Price with Delivery (₹)</label>
-              <div className={`${inputClass} bg-gray-50 text-gray-600`}>
-                {form.price_per_season ? `₹${(parseFloat(form.price_per_season) + 1000).toLocaleString('en-IN')}` : '—'}
+              <label className={labelClass}>Price with Delivery</label>
+              <div className="flex items-center gap-2 px-4 py-2.5 bg-emerald-50 border border-emerald-100 rounded-xl">
+                <span className="text-sm font-semibold text-emerald-700">
+                  {form.price_per_season
+                    ? `₹${(parseFloat(form.price_per_season) + 1000).toLocaleString('en-IN')}`
+                    : '—'}
+                </span>
               </div>
-              <p className="text-[11px] text-gray-400 mt-1">Season price + ₹1,000 delivery</p>
+              <p className="text-[11px] text-gray-400 mt-1.5 ml-1">Season price + ₹1,000 delivery</p>
             </div>
           </div>
-        </fieldset>
+        </SectionCard>
 
-        {/* Details */}
-        <fieldset className="space-y-4">
-          <legend className="text-xs font-bold text-gray-400 uppercase tracking-wider">Details</legend>
-          <div className="grid grid-cols-2 gap-4">
+        {/* 5. Details */}
+        <SectionCard
+          stepIndex={4}
+          icon={ClipboardIcon}
+          title="Additional Details"
+          completed={completedSteps.details}
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className={labelClass}>Min Yield Guarantee (kg/season)</label>
-              <input type="number" min="1" value={form.min_quantity} onChange={update('min_quantity')} placeholder="e.g. 50" className={inputClass} />
+              <input
+                type="number"
+                min="1"
+                value={form.min_quantity}
+                onChange={update('min_quantity')}
+                placeholder="e.g. 50"
+                className={inputClass}
+              />
             </div>
             <div>
               <label className={labelClass}>Size</label>
-              <select value={form.size} onChange={update('size')} className={`${inputClass} bg-white`}>
+              <select value={form.size} onChange={update('size')} className={selectClass}>
                 {SIZES.map((s) => (
                   <option key={s} value={s}>{s}</option>
                 ))}
               </select>
             </div>
           </div>
-        </fieldset>
+        </SectionCard>
 
+        {/* Error */}
         {error && (
-          <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>
+          <div className="flex items-start gap-3 bg-red-50 border border-red-100 rounded-2xl px-5 py-4">
+            <svg className="w-5 h-5 text-red-500 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clipRule="evenodd" />
+            </svg>
+            <p className="text-sm text-red-700">{error}</p>
+          </div>
         )}
 
-        <div className="flex gap-3 pt-2">
-          <Link to="/owner/trees" className="flex-1 px-4 py-3 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium text-center hover:bg-gray-50 transition-colors">
+        {/* Actions */}
+        <div className="flex flex-col sm:flex-row gap-3 pt-3 pb-8">
+          <Link
+            to="/owner/trees"
+            className="flex-1 px-5 py-3.5 border border-gray-200 text-gray-600 rounded-xl text-sm font-medium text-center hover:bg-gray-50 hover:border-gray-300 transition-all"
+          >
             Cancel
           </Link>
-          <button type="submit" disabled={loading} className="flex-1 px-4 py-3 bg-primary text-white rounded-xl text-sm font-medium hover:bg-primary-dark transition-colors disabled:opacity-50">
-            {loading ? 'Creating...' : 'List Tree'}
+          <button
+            type="submit"
+            disabled={loading}
+            className="flex-1 px-5 py-3.5 bg-linear-to-r from-primary to-emerald-600 text-white rounded-xl text-sm font-semibold shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 hover:brightness-105 transition-all disabled:opacity-50 disabled:shadow-none flex items-center justify-center gap-2"
+          >
+            {loading ? (
+              <>
+                <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                Creating...
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                List My Tree
+              </>
+            )}
           </button>
         </div>
       </form>
