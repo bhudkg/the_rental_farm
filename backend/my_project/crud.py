@@ -55,8 +55,12 @@ def get_trees(
     return q.offset(skip).limit(limit).all()
 
 
-def get_tree(db: Session, tree_id: uuid.UUID) -> Tree | None:
-    return db.query(Tree).filter(Tree.id == tree_id).first()
+def get_tree(db: Session, tree_id: uuid.UUID, load_owner: bool = False) -> Tree | None:
+    from sqlalchemy.orm import joinedload
+    q = db.query(Tree)
+    if load_owner:
+        q = q.options(joinedload(Tree.owner))
+    return q.filter(Tree.id == tree_id).first()
 
 
 def create_tree(db: Session, data: dict) -> Tree:

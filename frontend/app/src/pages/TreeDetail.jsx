@@ -1,22 +1,21 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import BookingModal from '../components/BookingModal';
-import DateRangePicker from '../components/DateRangePicker';
 import MapplsMap from '../components/MapplsMap';
-import { checkAvailability, fetchTree } from '../services/api';
+import { fetchTree } from '../services/api';
 
 const PLACEHOLDER_IMG = 'https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=800&q=80';
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 export default function TreeDetail() {
   const { id } = useParams();
   const [tree, setTree] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeImg, setActiveImg] = useState(0);
+  const [showAllPhotos, setShowAllPhotos] = useState(false);
 
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [availability, setAvailability] = useState(null);
-  const [checking, setChecking] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
@@ -25,229 +24,333 @@ export default function TreeDetail() {
       .finally(() => setLoading(false));
   }, [id]);
 
-  const handleCheckAvailability = async () => {
-    if (!startDate || !endDate) return;
-    setChecking(true);
-    setAvailability(null);
-    try {
-      const result = await checkAvailability(id, startDate, endDate);
-      setAvailability(result);
-    } catch {
-      setAvailability({ available: false, error: true });
-    } finally {
-      setChecking(false);
-    }
-  };
-
   const DELIVERY_FEE = 1000;
-  const totalPrice = tree
-    ? (Number(tree.price_per_season) || 0) + DELIVERY_FEE
-    : 0;
+  const seasonPrice = tree ? (Number(tree.price_per_season) || 0) : 0;
+  const totalPrice = seasonPrice + DELIVERY_FEE;
 
-  if (loading) {
-    return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div className="animate-pulse grid grid-cols-1 lg:grid-cols-2 gap-10">
-          <div className="bg-gray-100 rounded-2xl aspect-square" />
-          <div className="space-y-4">
-            <div className="h-8 bg-gray-100 rounded w-2/3" />
-            <div className="h-4 bg-gray-100 rounded w-1/3" />
-            <div className="h-20 bg-gray-100 rounded" />
-          </div>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <LoadingSkeleton />;
 
   if (!tree) {
     return (
-      <div className="text-center py-20">
-        <p className="text-gray-400 text-lg">Tree not found</p>
-        <Link to="/trees" className="text-primary font-medium mt-4 inline-block">&larr; Back to trees</Link>
+      <div className="flex flex-col items-center justify-center py-32 gap-4">
+        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
+          <svg className="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 21v-6m0 0c-3.5 0-6-2.5-6-6 0-2.5 1.5-4.5 3-5.5C10 2.5 11 2 12 2s2 .5 3 1.5c1.5 1 3 3 3 5.5 0 3.5-2.5 6-6 6z" />
+          </svg>
+        </div>
+        <p className="text-gray-400 text-lg font-medium">Tree not found</p>
+        <Link to="/trees" className="text-primary font-semibold text-sm hover:underline">&larr; Browse all trees</Link>
       </div>
     );
   }
 
+  const images = tree.image_urls?.length ? tree.image_urls : (tree.image_url ? [tree.image_url] : [PLACEHOLDER_IMG]);
   const locationParts = [tree.location, tree.city, tree.state].filter(Boolean);
+  const seasonText = tree.season_start && tree.season_end
+    ? `${MONTHS[tree.season_start - 1]} – ${MONTHS[tree.season_end - 1]}`
+    : null;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      <Link to="/trees" className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-6">
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-        </svg>
-        Back to trees
-      </Link>
+    <>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-5 pb-16">
+        {/* Breadcrumb */}
+        <nav className="flex items-center gap-1.5 text-sm text-gray-400 mb-4">
+          <Link to="/trees" className="hover:text-gray-600 transition-colors">Trees</Link>
+          <ChevronRight />
+          <span className="text-gray-500 capitalize">{tree.type}</span>
+          <ChevronRight />
+          <span className="text-gray-700 font-medium truncate max-w-[200px]">{tree.name}</span>
+        </nav>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-        {/* Image gallery */}
-        <div className="space-y-3">
-          <div className="aspect-square rounded-2xl overflow-hidden bg-gray-100">
-            <img
-              src={(tree.image_urls?.[activeImg]) || tree.image_url || PLACEHOLDER_IMG}
-              alt={tree.name}
-              className="w-full h-full object-cover"
-              onError={(e) => { e.target.src = PLACEHOLDER_IMG; }}
-            />
-          </div>
-          {tree.image_urls?.length > 1 && (
-            <div className="flex gap-2 overflow-x-auto pb-1">
-              {tree.image_urls.map((url, idx) => (
-                <button
-                  key={url}
-                  type="button"
-                  onClick={() => setActiveImg(idx)}
-                  className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors ${
-                    idx === activeImg ? 'border-primary' : 'border-transparent hover:border-gray-300'
-                  }`}
-                >
-                  <img src={url} alt={`${tree.name} ${idx + 1}`} className="w-full h-full object-cover" />
+        {/* ── Image Gallery ── */}
+        <div className="relative mb-7 rounded-2xl overflow-hidden">
+          {images.length >= 3 ? (
+            <div className="grid grid-cols-4 grid-rows-2 gap-1.5 h-[280px] sm:h-[340px]">
+              <button type="button" onClick={() => { setActiveImg(0); setShowAllPhotos(true); }} className="col-span-2 row-span-2 relative group cursor-pointer overflow-hidden">
+                <img src={images[0]} alt={tree.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onError={(e) => { e.target.src = PLACEHOLDER_IMG; }} />
+              </button>
+              {images.slice(1, 5).map((url, idx) => (
+                <button key={url} type="button" onClick={() => { setActiveImg(idx + 1); setShowAllPhotos(true); }} className="relative group cursor-pointer overflow-hidden">
+                  <img src={url} alt={`${tree.name} ${idx + 2}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onError={(e) => { e.target.src = PLACEHOLDER_IMG; }} />
+                </button>
+              ))}
+              {images.length < 5 && Array.from({ length: 5 - images.length }).map((_, i) => (
+                <div key={`ph-${i}`} className="bg-gray-100" />
+              ))}
+            </div>
+          ) : images.length === 2 ? (
+            <div className="grid grid-cols-2 gap-1.5 h-[280px] sm:h-[340px]">
+              {images.map((url, idx) => (
+                <button key={url} type="button" onClick={() => { setActiveImg(idx); setShowAllPhotos(true); }} className="relative group cursor-pointer overflow-hidden">
+                  <img src={url} alt={`${tree.name} ${idx + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onError={(e) => { e.target.src = PLACEHOLDER_IMG; }} />
                 </button>
               ))}
             </div>
+          ) : (
+            <button type="button" onClick={() => setShowAllPhotos(true)} className="w-full h-[280px] sm:h-[340px] cursor-pointer overflow-hidden group">
+              <img src={images[0]} alt={tree.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onError={(e) => { e.target.src = PLACEHOLDER_IMG; }} />
+            </button>
+          )}
+
+          {images.length > 1 && (
+            <button
+              type="button"
+              onClick={() => setShowAllPhotos(true)}
+              className="absolute bottom-3 right-3 px-3.5 py-2 bg-white border border-gray-200 rounded-lg text-xs font-semibold text-gray-700 hover:bg-gray-50 shadow-sm transition-all flex items-center gap-1.5"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+              </svg>
+              Show all photos
+            </button>
           )}
         </div>
 
-        {/* Details */}
-        <div>
-          <div className="flex flex-wrap items-center gap-2 mb-2">
-            <span className="inline-block px-3 py-1 bg-primary/10 text-primary text-sm font-semibold rounded-full capitalize">
-              {tree.type}
-            </span>
-            {tree.variety && (
-              <span className="text-sm text-gray-500">{tree.variety}</span>
-            )}
-          </div>
+        {/* ── Two-column layout ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-10 lg:gap-12">
 
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">{tree.name}</h1>
-
-          {/* Location */}
-          {locationParts.length > 0 && (
-            <div className="flex items-center gap-1.5 mb-3">
-              <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
-              </svg>
-              <span className="text-sm text-gray-500">{locationParts.join(', ')}</span>
+          {/* ─ Left: Info ─ */}
+          <div>
+            {/* Title + meta */}
+            <div className="mb-6">
+              <div className="flex flex-wrap items-center gap-2 mb-2">
+                <span className="px-2.5 py-0.5 bg-primary/10 text-primary text-xs font-bold rounded-full capitalize">{tree.type}</span>
+                {tree.variety && <span className="text-sm text-gray-500">{tree.variety}</span>}
+              </div>
+              <h1 className="text-2xl sm:text-[28px] font-bold text-gray-900 leading-tight mb-1.5">{tree.name}</h1>
+              {locationParts.length > 0 && (
+                <p className="flex items-center gap-1.5 text-sm text-gray-500">
+                  <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                  </svg>
+                  {locationParts.join(', ')}
+                </p>
+              )}
             </div>
-          )}
 
-          {/* Location Map */}
-          {tree.latitude && tree.longitude && (
-            <div className="mb-4">
-              <MapplsMap
-                center={[tree.latitude, tree.longitude]}
-                zoom={12}
-                height="220px"
-                mapId={`tree-detail-map-${tree.id}`}
-                markers={[{
-                  id: tree.id,
-                  lat: tree.latitude,
-                  lng: tree.longitude,
-                  name: tree.name,
-                  popupHtml: `<div style="padding:4px;font-size:13px;font-family:system-ui,sans-serif;"><strong>${tree.name}</strong><br/><span style="color:#666;">${locationParts.join(', ')}</span></div>`,
-                }]}
+            <hr className="border-gray-100 mb-6" />
+
+            {/* Key details — only real data */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-5 mb-6">
+              {tree.size && (
+                <DetailItem label="Size" value={tree.size} />
+              )}
+              {seasonText && (
+                <DetailItem label="Fruiting Season" value={seasonText} />
+              )}
+              {tree.min_quantity > 0 && (
+                <DetailItem label="Min Yield Guarantee" value={`${tree.min_quantity} kg/season`} />
+              )}
+              <DetailItem label="Available" value={`${tree.available_quantity} trees`} />
+              {tree.deposit > 0 && (
+                <DetailItem label="Refundable Deposit" value={`₹${Number(tree.deposit).toLocaleString('en-IN')}`} />
+              )}
+              <DetailItem
+                label="Maintenance"
+                value={tree.maintenance_required ? 'Included' : 'Not included'}
               />
             </div>
-          )}
 
-          <p className="text-gray-500 mb-6 leading-relaxed">{tree.description}</p>
+            <hr className="border-gray-100 mb-6" />
 
-          {/* Info grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
-            <div className="bg-primary/5 border border-primary/20 rounded-xl p-3">
-              <p className="text-[11px] text-primary mb-0.5">Season Rate</p>
-              <p className="text-lg font-bold text-primary">
-                ₹{tree.price_per_season != null ? Number(tree.price_per_season).toLocaleString('en-IN') : '—'}
-              </p>
-            </div>
-            <div className="bg-gray-50 rounded-xl p-3">
-              <p className="text-[11px] text-gray-400 mb-0.5">Deposit</p>
-              <p className="text-lg font-bold text-gray-900">₹{tree.deposit}</p>
-            </div>
-            <div className="bg-gray-50 rounded-xl p-3">
-              <p className="text-[11px] text-gray-400 mb-0.5">Size</p>
-              <p className="text-lg font-bold text-gray-900">{tree.size}</p>
-            </div>
-            {tree.min_quantity > 1 && (
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
-                <p className="text-[11px] text-blue-500 mb-0.5">Min Guarantee</p>
-                <p className="text-lg font-bold text-blue-700">{tree.min_quantity} trees</p>
-              </div>
+            {/* Description */}
+            {tree.description && (
+              <>
+                <div className="mb-6">
+                  <h2 className="text-base font-semibold text-gray-900 mb-2">About this tree</h2>
+                  <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{tree.description}</p>
+                </div>
+                <hr className="border-gray-100 mb-6" />
+              </>
             )}
-          </div>
 
-          {/* Date selection */}
-          <div className="border border-gray-200 rounded-2xl p-6 space-y-5">
-            <h3 className="font-semibold text-gray-900">Select Rental Dates</h3>
+            {/* Owner info */}
+            {tree.owner && (
+              <>
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <span className="text-lg font-bold text-primary">
+                      {tree.owner.name?.charAt(0)?.toUpperCase() || '?'}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">Listed by {tree.owner.name}</p>
+                    <p className="text-xs text-gray-400">
+                      Member since {new Date(tree.owner.created_at).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}
+                    </p>
+                  </div>
+                </div>
+                <hr className="border-gray-100 mb-6" />
+              </>
+            )}
 
-            <DateRangePicker
-              startDate={startDate}
-              endDate={endDate}
-              onStartChange={(d) => { setStartDate(d); setAvailability(null); }}
-              onEndChange={(d) => { setEndDate(d); setAvailability(null); }}
-            />
-
-            <button
-              onClick={handleCheckAvailability}
-              disabled={!startDate || !endDate || checking}
-              className="w-full py-3 bg-gray-900 text-white font-medium rounded-xl hover:bg-gray-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {checking ? 'Checking...' : 'Check Availability'}
-            </button>
-
-            {availability && (
-              <div
-                className={`p-4 rounded-xl text-sm font-medium ${
-                  availability.available
-                    ? 'bg-green-50 text-green-700 border border-green-200'
-                    : 'bg-red-50 text-red-700 border border-red-200'
-                }`}
-              >
-                {availability.available ? (
-                  <>
-                    Available! Season ₹
-                    {tree.price_per_season != null ? Number(tree.price_per_season).toLocaleString('en-IN') : '—'} + ₹
-                    {DELIVERY_FEE.toLocaleString('en-IN')} delivery ={' '}
-                    <span className="font-bold">₹{totalPrice.toLocaleString('en-IN')}</span>
-                  </>
-                ) : (
-                  'Sorry, this tree is not available for the selected dates.'
+            {/* Pricing breakdown */}
+            <div className="mb-6">
+              <h2 className="text-base font-semibold text-gray-900 mb-3">Pricing</h2>
+              <div className="bg-gray-50 rounded-xl p-4 space-y-2.5 text-sm">
+                <div className="flex justify-between text-gray-600">
+                  <span>Season rate</span>
+                  <span className="font-medium text-gray-800">
+                    ₹{seasonPrice > 0 ? seasonPrice.toLocaleString('en-IN') : '—'}
+                  </span>
+                </div>
+                <div className="flex justify-between text-gray-600">
+                  <span>Delivery fee</span>
+                  <span className="font-medium text-gray-800">₹{DELIVERY_FEE.toLocaleString('en-IN')}</span>
+                </div>
+                {tree.deposit > 0 && (
+                  <div className="flex justify-between text-gray-600">
+                    <span>Refundable deposit</span>
+                    <span className="font-medium text-gray-800">₹{Number(tree.deposit).toLocaleString('en-IN')}</span>
+                  </div>
                 )}
+                <hr className="border-gray-200" />
+                <div className="flex justify-between">
+                  <span className="font-semibold text-gray-900">Total per season</span>
+                  <span className="font-bold text-gray-900">₹{totalPrice.toLocaleString('en-IN')}</span>
+                </div>
               </div>
-            )}
+            </div>
 
-            {availability?.available && (
-              <button
-                onClick={() => setShowModal(true)}
-                className="w-full py-3.5 bg-primary text-white font-semibold rounded-xl hover:bg-primary-dark transition-colors shadow-lg shadow-primary/20"
-              >
-                Book Now &mdash; ₹{totalPrice.toLocaleString('en-IN')}
-              </button>
-            )}
+            <hr className="border-gray-100 mb-6" />
+
+            {/* Location & Map */}
+            <div>
+              <h2 className="text-base font-semibold text-gray-900 mb-1.5">Location</h2>
+              {locationParts.length > 0 && (
+                <p className="text-sm text-gray-500 mb-3">{locationParts.join(', ')}</p>
+              )}
+              {tree.latitude && tree.longitude ? (
+                <div className="rounded-xl overflow-hidden border border-gray-100">
+                  <MapplsMap
+                    center={[Number(tree.latitude), Number(tree.longitude)]}
+                    zoom={14}
+                    height="260px"
+                    mapId={`tree-detail-map-${tree.id}`}
+                    markers={[{
+                      id: String(tree.id),
+                      lat: Number(tree.latitude),
+                      lng: Number(tree.longitude),
+                      name: tree.name,
+                      popupHtml: `<div style="padding:6px 8px;font-size:13px;font-family:system-ui,sans-serif;"><strong>${tree.name}</strong><br/><span style="color:#666;">${locationParts.join(', ')}</span></div>`,
+                    }]}
+                  />
+                </div>
+              ) : (
+                <div className="h-40 bg-gray-50 rounded-xl border border-gray-100 flex items-center justify-center">
+                  <p className="text-sm text-gray-400">Exact location provided after booking</p>
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Extra info */}
-          <div className="mt-6 flex flex-wrap items-center gap-4 text-sm text-gray-500">
-            <span className="flex items-center gap-1">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0H21M3.375 14.25h17.25" />
-              </svg>
-              Free delivery
-            </span>
-            {tree.maintenance_required && (
-              <span className="flex items-center gap-1">
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23.693L5 14.5m14.8.8l1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0112 21c-2.773 0-5.491-.235-8.135-.687-1.718-.293-2.3-2.379-1.067-3.61L5 14.5" />
-                </svg>
-                Maintenance included
-              </span>
-            )}
-            <span>{tree.available_quantity} in stock</span>
+          {/* ─ Right: Booking card (sticky) ─ */}
+          <div className="lg:self-start">
+            <div className="lg:sticky lg:top-6 space-y-4">
+              <div className="border border-gray-200 rounded-2xl shadow-lg shadow-black/5 bg-white overflow-hidden">
+                {/* Price */}
+                <div className="px-5 pt-5 pb-4">
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-[22px] font-bold text-gray-900">
+                      ₹{seasonPrice > 0 ? seasonPrice.toLocaleString('en-IN') : '—'}
+                    </span>
+                    <span className="text-sm text-gray-500 font-normal">/ season</span>
+                  </div>
+                </div>
+
+                {/* Date inputs */}
+                <div className="mx-5 border border-gray-200 rounded-xl overflow-hidden mb-4">
+                  <div className="grid grid-cols-2 divide-x divide-gray-200">
+                    <DateCell
+                      label="Start date"
+                      min={new Date().toISOString().split('T')[0]}
+                      value={startDate}
+                      onChange={(v) => { setStartDate(v); setAvailability(null); }}
+                    />
+                    <DateCell
+                      label="End date"
+                      min={startDate || new Date().toISOString().split('T')[0]}
+                      value={endDate}
+                      onChange={(v) => { setEndDate(v); setAvailability(null); }}
+                    />
+                  </div>
+                </div>
+
+                <div className="px-5 pb-5 space-y-3">
+                  {/* CTA */}
+                  <button
+                    onClick={handleCheckAvailability}
+                    disabled={!startDate || !endDate || checking}
+                    className="w-full py-3 bg-primary text-white text-sm font-semibold rounded-xl hover:bg-primary-dark transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {checking ? 'Checking...' : 'Check Availability'}
+                  </button>
+
+                  {/* Result */}
+                  {availability && (
+                    availability.available ? (
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2 text-sm">
+                          <svg className="w-5 h-5 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
+                          </svg>
+                          <span className="font-semibold text-emerald-700">Available for these dates</span>
+                        </div>
+                        <div className="text-sm space-y-1.5 text-gray-500">
+                          <div className="flex justify-between">
+                            <span>Season rate</span>
+                            <span className="text-gray-700">₹{seasonPrice.toLocaleString('en-IN')}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Delivery</span>
+                            <span className="text-gray-700">₹{DELIVERY_FEE.toLocaleString('en-IN')}</span>
+                          </div>
+                          <hr className="border-gray-100" />
+                          <div className="flex justify-between font-semibold text-gray-900">
+                            <span>Total</span>
+                            <span>₹{totalPrice.toLocaleString('en-IN')}</span>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => setShowModal(true)}
+                          className="w-full py-3 bg-linear-to-r from-primary to-emerald-600 text-white font-bold rounded-xl hover:brightness-105 transition-all shadow-lg shadow-primary/20 text-sm"
+                        >
+                          Reserve — ₹{totalPrice.toLocaleString('en-IN')}
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 text-sm bg-red-50 border border-red-100 rounded-xl px-3 py-2.5">
+                        <svg className="w-4 h-4 text-red-400 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clipRule="evenodd" />
+                        </svg>
+                        <span className="text-red-700">Not available for selected dates</span>
+                      </div>
+                    )
+                  )}
+
+                  {!availability && (
+                    <p className="text-xs text-gray-400 text-center">Select dates to check availability</p>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
+      {/* Full-screen photo viewer */}
+      {showAllPhotos && (
+        <PhotoViewer
+          images={images}
+          treeName={tree.name}
+          activeImg={activeImg}
+          setActiveImg={setActiveImg}
+          onClose={() => setShowAllPhotos(false)}
+        />
+      )}
+
+      {/* Booking modal */}
       {showModal && (
         <BookingModal
           tree={tree}
@@ -258,6 +361,117 @@ export default function TreeDetail() {
           onClose={() => setShowModal(false)}
         />
       )}
+    </>
+  );
+}
+
+/* ─── Sub-components ─── */
+
+function ChevronRight() {
+  return (
+    <svg className="w-3 h-3 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+    </svg>
+  );
+}
+
+function DetailItem({ label, value }) {
+  return (
+    <div>
+      <p className="text-xs text-gray-400 mb-0.5">{label}</p>
+      <p className="text-sm font-semibold text-gray-800">{value}</p>
+    </div>
+  );
+}
+
+function DateCell({ label, min, value, onChange }) {
+  return (
+    <div className="px-3 py-2.5">
+      <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">{label}</label>
+      <input
+        type="date"
+        min={min}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full text-sm text-gray-800 font-medium outline-none bg-transparent cursor-pointer"
+      />
+    </div>
+  );
+}
+
+function PhotoViewer({ images, treeName, activeImg, setActiveImg, onClose }) {
+  return (
+    <div className="fixed inset-0 z-50 bg-black/95">
+      <div className="absolute top-4 left-4 z-10">
+        <button onClick={onClose} className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm text-white rounded-full text-sm font-medium hover:bg-white/20 transition-colors">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+          Close
+        </button>
+      </div>
+      <div className="absolute top-4 right-4 z-10 text-white/50 text-sm">
+        {activeImg + 1} / {images.length}
+      </div>
+
+      <div className="h-full flex items-center justify-center px-14">
+        {images.length > 1 && (
+          <button onClick={() => setActiveImg((activeImg - 1 + images.length) % images.length)} className="absolute left-3 p-2 bg-white/10 text-white rounded-full hover:bg-white/20 transition-colors">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+          </button>
+        )}
+
+        <img src={images[activeImg]} alt={`${treeName} ${activeImg + 1}`} className="max-h-[80vh] max-w-full object-contain rounded-lg" />
+
+        {images.length > 1 && (
+          <button onClick={() => setActiveImg((activeImg + 1) % images.length)} className="absolute right-3 p-2 bg-white/10 text-white rounded-full hover:bg-white/20 transition-colors">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+          </button>
+        )}
+      </div>
+
+      {images.length > 1 && (
+        <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex gap-1.5 max-w-[80vw] overflow-x-auto pb-1">
+          {images.map((url, idx) => (
+            <button
+              key={url}
+              onClick={() => setActiveImg(idx)}
+              className={`shrink-0 w-12 h-12 rounded-md overflow-hidden border-2 transition-all ${
+                idx === activeImg ? 'border-white' : 'border-transparent opacity-40 hover:opacity-70'
+              }`}
+            >
+              <img src={url} alt="" className="w-full h-full object-cover" />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LoadingSkeleton() {
+  return (
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-pulse">
+      <div className="h-4 bg-gray-100 rounded w-48 mb-5" />
+      <div className="grid grid-cols-4 grid-rows-2 gap-1.5 rounded-2xl overflow-hidden h-[340px] mb-8">
+        <div className="col-span-2 row-span-2 bg-gray-100" />
+        <div className="bg-gray-100" /><div className="bg-gray-100" />
+        <div className="bg-gray-100" /><div className="bg-gray-100" />
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-12">
+        <div className="space-y-5">
+          <div className="h-6 bg-gray-100 rounded w-40" />
+          <div className="h-8 bg-gray-100 rounded w-72" />
+          <div className="h-4 bg-gray-100 rounded w-56" />
+          <div className="h-px bg-gray-100 w-full" />
+          <div className="grid grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => <div key={i} className="h-10 bg-gray-100 rounded" />)}
+          </div>
+          <div className="h-px bg-gray-100 w-full" />
+          <div className="h-24 bg-gray-100 rounded-xl" />
+        </div>
+        <div className="h-72 bg-gray-100 rounded-2xl" />
+      </div>
     </div>
   );
 }

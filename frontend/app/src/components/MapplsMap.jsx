@@ -156,7 +156,7 @@ function MapplsMapInner({
   useEffect(() => {
     if (!loaded || !mapRef.current || !sdk) return;
 
-    const addMarkers = () => {
+    const addMarkers = (attempt = 1) => {
       markerRefs.current.forEach((m) => {
         try { m.remove?.(); } catch { /* ok */ }
       });
@@ -165,26 +165,47 @@ function MapplsMapInner({
       const validMarkers = markers.filter((m) => m.lat != null && m.lng != null);
       if (validMarkers.length === 0) return;
 
+      let anyCreated = false;
+
       validMarkers.forEach((m) => {
+        const lat = Number(m.lat);
+        const lng = Number(m.lng);
+        if (Number.isNaN(lat) || Number.isNaN(lng)) return;
+
         try {
-          const marker = sdk.marker({
+          const markerOpts = {
             map: mapRef.current,
-            position: { lat: Number(m.lat), lng: Number(m.lng) },
+            position: { lat, lng },
             popupHtml: m.popupHtml || `<div style="padding:4px;font-size:13px;"><strong>${m.name || 'Tree'}</strong></div>`,
-            popupOptions: { openPopup: false, autoClose: true, maxWidth: 250 },
-          });
+            popupOptions: { openPopup: validMarkers.length === 1, autoClose: true, maxWidth: 250 },
+          };
+
+          const marker = typeof sdk.Marker === 'function'
+            ? sdk.Marker(markerOpts)
+            : sdk.marker(markerOpts);
 
           if (onMarkerClick && marker && typeof marker.addListener === 'function') {
             marker.addListener('click', () => onMarkerClick(m));
           }
-          if (marker) markerRefs.current.push(marker);
+          if (marker) {
+            markerRefs.current.push(marker);
+            anyCreated = true;
+          }
         } catch { /* skip bad marker */ }
       });
 
-      if (validMarkers.length > 1 && !center) {
+      if (!anyCreated && attempt < 3) {
+        setTimeout(() => addMarkers(attempt + 1), 800 * attempt);
+        return;
+      }
+
+      if (validMarkers.length === 1 && center) {
+        try { mapRef.current.setCenter({ lat: Number(center[0]), lng: Number(center[1]) }); } catch { /* ok */ }
+        try { mapRef.current.setZoom(zoom || 14); } catch { /* ok */ }
+      } else if (validMarkers.length > 1 && !center) {
         try {
-          const lats = validMarkers.map((m) => m.lat);
-          const lngs = validMarkers.map((m) => m.lng);
+          const lats = validMarkers.map((mk) => Number(mk.lat));
+          const lngs = validMarkers.map((mk) => Number(mk.lng));
           mapRef.current.fitBounds(
             [[Math.min(...lats), Math.min(...lngs)], [Math.max(...lats), Math.max(...lngs)]],
             { padding: 60, maxZoom: 14 },
@@ -193,9 +214,9 @@ function MapplsMapInner({
       }
     };
 
-    const timer = setTimeout(addMarkers, 600);
+    const timer = setTimeout(addMarkers, 1200);
     return () => clearTimeout(timer);
-  }, [loaded, markers, center, onMarkerClick]);
+  }, [loaded, markers, center, zoom, onMarkerClick]);
 
   if (error) {
     return (

@@ -95,6 +95,18 @@ class TreeOut(TreeBase):
     model_config = {"from_attributes": True}
 
 
+class OwnerInfo(BaseModel):
+    id: uuid.UUID
+    name: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class TreeDetailOut(TreeOut):
+    owner: OwnerInfo | None = None
+
+
 # ── Availability ──
 
 class AvailabilityRequest(BaseModel):

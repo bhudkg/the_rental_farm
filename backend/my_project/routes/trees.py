@@ -7,7 +7,7 @@ import crud
 from auth_utils import require_user
 from database import get_db
 from models import User
-from schemas import TreeCreate, TreeOut, TreeUpdate
+from schemas import TreeCreate, TreeDetailOut, TreeOut, TreeUpdate
 
 router = APIRouter(prefix="/api/trees", tags=["trees"])
 
@@ -43,9 +43,9 @@ def list_trees(
     )
 
 
-@router.get("/{tree_id}", response_model=TreeOut)
+@router.get("/{tree_id}", response_model=TreeDetailOut)
 def get_tree(tree_id: uuid.UUID, db: Session = Depends(get_db)):
-    tree = crud.get_tree(db, tree_id)
+    tree = crud.get_tree(db, tree_id, load_owner=True)
     if not tree:
         raise HTTPException(status_code=404, detail="Tree not found")
     return tree

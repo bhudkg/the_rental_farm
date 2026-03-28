@@ -30,84 +30,124 @@ export default function BookingModal({ tree, startDate, endDate, totalPrice, dep
     }
   };
 
+  const formatDate = (d) => {
+    try {
+      return new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+    } catch { return d; }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-5">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold text-gray-900">Confirm Booking</h2>
-          <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden">
+        {/* Header */}
+        <div className="bg-linear-to-r from-primary to-emerald-600 px-6 py-5 text-white">
+          <div className="flex items-center justify-between mb-1">
+            <h2 className="text-lg font-bold">Confirm your booking</h2>
+            <button onClick={onClose} className="p-1.5 hover:bg-white/20 rounded-full transition-colors">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <p className="text-sm text-white/70">Review your rental details below</p>
         </div>
 
-        <div className="flex gap-4">
-          <img
-            src={tree.image_urls?.[0] || tree.image_url}
-            alt={tree.name}
-            className="w-20 h-20 rounded-xl object-cover"
-          />
-          <div>
-            <h3 className="font-semibold text-gray-900">{tree.name}</h3>
-            <p className="text-sm text-gray-500 capitalize">{tree.type} &middot; {tree.size}</p>
+        <div className="p-6 space-y-5">
+          {/* Tree info */}
+          <div className="flex gap-4 items-center">
+            <img
+              src={tree.image_urls?.[0] || tree.image_url}
+              alt={tree.name}
+              className="w-18 h-18 rounded-xl object-cover border border-gray-100"
+            />
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-gray-900 truncate">{tree.name}</h3>
+              <p className="text-sm text-gray-500 capitalize">{tree.type}{tree.variety ? ` · ${tree.variety}` : ''}</p>
+              <p className="text-xs text-gray-400 mt-0.5">{tree.size}</p>
+            </div>
           </div>
-        </div>
 
-        <div className="bg-gray-50 rounded-xl p-4 space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-gray-500">Rental period</span>
-            <span className="font-medium">
-              {startDate} &rarr; {endDate}
-            </span>
+          {/* Dates */}
+          <div className="flex items-center gap-3 p-3.5 bg-gray-50 rounded-xl">
+            <div className="flex-1 text-center">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Check in</p>
+              <p className="text-sm font-semibold text-gray-800 mt-0.5">{formatDate(startDate)}</p>
+            </div>
+            <div className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center shrink-0">
+              <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+              </svg>
+            </div>
+            <div className="flex-1 text-center">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Check out</p>
+              <p className="text-sm font-semibold text-gray-800 mt-0.5">{formatDate(endDate)}</p>
+            </div>
           </div>
-          <div className="flex justify-between">
-            <span className="text-gray-500">Duration</span>
-            <span className="font-medium">{days} days</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-500">Season rate</span>
-            <span className="font-medium">₹{seasonPrice.toLocaleString('en-IN')}/season</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-500">Delivery</span>
-            <span className="font-medium">₹{DELIVERY_FEE.toLocaleString('en-IN')}</span>
-          </div>
-          <hr className="border-gray-200" />
-          <div className="flex justify-between">
-            <span className="text-gray-500">Rental total</span>
-            <span className="font-bold text-gray-900">₹{totalPrice.toLocaleString('en-IN')}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-500">Refundable deposit</span>
-            <span className="font-medium">₹{Number(deposit).toLocaleString('en-IN')}</span>
-          </div>
-          <hr className="border-gray-200" />
-          <div className="flex justify-between text-base">
-            <span className="font-semibold text-gray-900">Total due</span>
-            <span className="font-bold text-primary">₹{(totalPrice + Number(deposit)).toLocaleString('en-IN')}</span>
-          </div>
-        </div>
 
-        {error && (
-          <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>
-        )}
+          {/* Price breakdown */}
+          <div className="space-y-2.5 text-sm">
+            <div className="flex justify-between text-gray-600">
+              <span>Season rate</span>
+              <span className="font-medium">₹{seasonPrice.toLocaleString('en-IN')}</span>
+            </div>
+            <div className="flex justify-between text-gray-600">
+              <span>Delivery fee</span>
+              <span className="font-medium">₹{DELIVERY_FEE.toLocaleString('en-IN')}</span>
+            </div>
+            <div className="flex justify-between text-gray-600">
+              <span>Duration</span>
+              <span className="font-medium">{days} days</span>
+            </div>
+            <hr className="border-gray-100" />
+            <div className="flex justify-between text-gray-800">
+              <span className="font-medium">Rental total</span>
+              <span className="font-bold">₹{totalPrice.toLocaleString('en-IN')}</span>
+            </div>
+            <div className="flex justify-between text-gray-500">
+              <span>Refundable deposit</span>
+              <span className="font-medium">₹{Number(deposit).toLocaleString('en-IN')}</span>
+            </div>
+            <hr className="border-gray-100" />
+            <div className="flex justify-between pt-1">
+              <span className="text-base font-bold text-gray-900">Total due today</span>
+              <span className="text-base font-bold text-primary">₹{(totalPrice + Number(deposit)).toLocaleString('en-IN')}</span>
+            </div>
+          </div>
 
-        <div className="flex gap-3">
-          <button
-            onClick={onClose}
-            className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleConfirm}
-            disabled={loading}
-            className="flex-1 px-4 py-2.5 bg-primary text-white rounded-xl text-sm font-medium hover:bg-primary-dark transition-colors disabled:opacity-50"
-          >
-            {loading ? 'Booking...' : 'Confirm Booking'}
-          </button>
+          {error && (
+            <div className="flex items-center gap-2 text-sm text-red-700 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
+              <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clipRule="evenodd" />
+              </svg>
+              {error}
+            </div>
+          )}
+
+          {/* Actions */}
+          <div className="flex gap-3 pt-1">
+            <button
+              onClick={onClose}
+              className="flex-1 px-4 py-3 border border-gray-200 text-gray-600 rounded-xl text-sm font-medium hover:bg-gray-50 hover:border-gray-300 transition-all"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleConfirm}
+              disabled={loading}
+              className="flex-1 px-4 py-3 bg-linear-to-r from-primary to-emerald-600 text-white rounded-xl text-sm font-semibold hover:brightness-105 transition-all disabled:opacity-50 shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
+            >
+              {loading ? (
+                <>
+                  <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Booking...
+                </>
+              ) : 'Confirm Booking'}
+            </button>
+          </div>
         </div>
       </div>
     </div>
