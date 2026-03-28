@@ -1,7 +1,5 @@
 import uuid
-from datetime import date
 
-from sqlalchemy import and_, func
 from sqlalchemy.orm import Session
 
 from models import Order, Tree, User
@@ -85,36 +83,6 @@ def delete_tree(db: Session, tree: Tree) -> None:
     db.commit()
 
 
-# ── Availability ──
-
-def count_overlapping_bookings(db: Session, tree_id: uuid.UUID, start: date, end: date) -> int:
-    """Count bookings that overlap with the requested date range (excluding cancelled)."""
-    return (
-        db.query(func.count(Order.id))
-        .filter(
-            and_(
-                Order.tree_id == tree_id,
-                Order.status.notin_(["cancelled", "completed"]),
-                Order.start_date <= end,
-                Order.end_date >= start,
-            )
-        )
-        .scalar()
-    )
-
-
-def check_availability(db: Session, tree_id: uuid.UUID, start: date, end: date) -> dict:
-    tree = get_tree(db, tree_id)
-    if not tree:
-        return {"available": False, "available_quantity": 0, "booked_quantity": 0}
-    booked = count_overlapping_bookings(db, tree_id, start, end)
-    return {
-        "available": tree.available_quantity > booked,
-        "available_quantity": tree.available_quantity,
-        "booked_quantity": booked,
-    }
-
-
 # ── Users ──
 
 def get_user_by_email(db: Session, email: str) -> User | None:
@@ -158,7 +126,6 @@ def get_trees_by_owner(db: Session, owner_id: uuid.UUID) -> list[Tree]:
 
 
 def get_orders_for_owner_trees(db: Session, owner_id: uuid.UUID) -> list[Order]:
-    """Get all orders placed on trees owned by this user."""
     return (
         db.query(Order)
         .join(Tree, Order.tree_id == Tree.id)

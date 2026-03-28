@@ -22,26 +22,15 @@ def create_order(
     if not tree:
         raise HTTPException(status_code=404, detail="Tree not found")
 
-    if body.end_date <= body.start_date:
-        raise HTTPException(status_code=400, detail="end_date must be after start_date")
-
-    avail = crud.check_availability(db, body.tree_id, body.start_date, body.end_date)
-    if not avail["available"]:
-        raise HTTPException(status_code=409, detail="Tree not available for selected dates")
-
     total_price = (tree.price_per_season or 0) + 1000
 
-    # Use authenticated user, or fall back to a guest user for MVP
     user_id = current_user.id if current_user else _get_or_create_guest(db)
 
     order = crud.create_order(db, {
         "user_id": user_id,
         "tree_id": body.tree_id,
-        "start_date": body.start_date,
-        "end_date": body.end_date,
         "total_price": total_price,
         "deposit": tree.deposit,
-        "delivery_slot": body.delivery_slot,
         "status": "pending",
     })
     db.refresh(order, ["tree"])

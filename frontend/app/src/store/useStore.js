@@ -16,8 +16,6 @@ const useStore = create((set) => ({
   token: localStorage.getItem('token') || null,
 
   selectedTree: null,
-  startDate: '',
-  endDate: '',
   bookingPrice: null,
 
   setUser: (user) => {
@@ -51,12 +49,10 @@ const useStore = create((set) => ({
   },
 
   setSelectedTree: (tree) => set({ selectedTree: tree }),
-  setStartDate: (d) => set({ startDate: d }),
-  setEndDate: (d) => set({ endDate: d }),
   setBookingPrice: (p) => set({ bookingPrice: p }),
 
   resetBooking: () =>
-    set({ selectedTree: null, startDate: '', endDate: '', bookingPrice: null }),
+    set({ selectedTree: null, bookingPrice: null }),
 }));
 
 export default useStore;

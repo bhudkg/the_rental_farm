@@ -50,16 +50,6 @@ export const updateTree = (id, data) => api.put(`/trees/${id}`, data).then((r) =
 
 export const deleteTree = (id) => api.delete(`/trees/${id}`);
 
-// ── Availability ──
-
-export const checkAvailability = (treeId, startDate, endDate) =>
-  api
-    .post(`/trees/${treeId}/availability`, {
-      start_date: startDate,
-      end_date: endDate,
-    })
-    .then((r) => r.data);
-
 // ── Orders ──
 
 export const createOrder = (data) => api.post('/orders', data).then((r) => r.data);

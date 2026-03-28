@@ -1,5 +1,5 @@
 import uuid
-from datetime import date, datetime
+from datetime import datetime
 
 from pydantic import BaseModel, EmailStr, field_validator
 
@@ -107,37 +107,18 @@ class TreeDetailOut(TreeOut):
     owner: OwnerInfo | None = None
 
 
-# ── Availability ──
-
-class AvailabilityRequest(BaseModel):
-    start_date: date
-    end_date: date
-
-
-class AvailabilityResponse(BaseModel):
-    available: bool
-    available_quantity: int
-    booked_quantity: int
-
-
 # ── Order ──
 
 class OrderCreate(BaseModel):
     tree_id: uuid.UUID
-    start_date: date
-    end_date: date
-    delivery_slot: datetime | None = None
 
 
 class OrderOut(BaseModel):
     id: uuid.UUID
     user_id: uuid.UUID
     tree_id: uuid.UUID
-    start_date: date
-    end_date: date
     total_price: float
     deposit: float
-    delivery_slot: datetime | None
     status: str
     created_at: datetime
     tree: TreeOut | None = None

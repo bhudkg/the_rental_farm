@@ -126,13 +126,15 @@ export default function OwnerDashboard() {
                   <img
                     src={order.tree.image_urls?.[0] || order.tree.image_url}
                     alt={order.tree.name}
-                    className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
+                    className="w-12 h-12 rounded-lg object-cover shrink-0"
                   />
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-gray-900 truncate">{order.tree?.name}</p>
                   <p className="text-xs text-gray-500">
-                    {order.start_date} &rarr; {order.end_date}
+                    {new Date(order.created_at).toLocaleDateString('en-IN', {
+                      day: 'numeric', month: 'short', year: 'numeric',
+                    })}
                   </p>
                 </div>
                 <span

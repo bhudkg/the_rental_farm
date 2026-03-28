@@ -65,7 +65,7 @@ export default function Orders() {
                   <img
                     src={order.tree.image_urls?.[0] || order.tree.image_url}
                     alt={order.tree.name}
-                    className="w-16 h-16 rounded-xl object-cover flex-shrink-0"
+                    className="w-16 h-16 rounded-xl object-cover shrink-0"
                   />
                 )}
                 <div className="flex-1 min-w-0">
@@ -82,10 +82,12 @@ export default function Orders() {
                     </span>
                   </div>
                   <p className="text-sm text-gray-500">
-                    {order.start_date} &rarr; {order.end_date}
+                    {new Date(order.created_at).toLocaleDateString('en-IN', {
+                      day: 'numeric', month: 'short', year: 'numeric',
+                    })}
                   </p>
                 </div>
-                <div className="text-right flex-shrink-0">
+                <div className="text-right shrink-0">
                   <p className="font-bold text-gray-900">₹{order.total_price.toFixed(2)}</p>
                   <p className="text-xs text-gray-400">+ ₹{order.deposit.toFixed(2)} deposit</p>
                 </div>

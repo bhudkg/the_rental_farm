@@ -43,10 +43,6 @@ export default function OrderDetail() {
     );
   }
 
-  const days = Math.ceil(
-    (new Date(order.end_date) - new Date(order.start_date)) / (1000 * 60 * 60 * 24)
-  );
-
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
       <Link to="/orders" className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-6">
@@ -100,12 +96,12 @@ export default function OrderDetail() {
           <span className="font-mono text-xs text-gray-600">{order.id}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-gray-500">Rental Period</span>
-          <span className="font-medium">{order.start_date} &rarr; {order.end_date}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-gray-500">Duration</span>
-          <span className="font-medium">{days} days</span>
+          <span className="text-gray-500">Placed on</span>
+          <span className="font-medium">
+            {new Date(order.created_at).toLocaleDateString('en-IN', {
+              day: 'numeric', month: 'short', year: 'numeric',
+            })}
+          </span>
         </div>
         <hr className="border-gray-200" />
         <div className="flex justify-between">

@@ -14,8 +14,6 @@ export default function TreeDetail() {
   const [activeImg, setActiveImg] = useState(0);
   const [showAllPhotos, setShowAllPhotos] = useState(false);
 
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
   const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
@@ -247,91 +245,51 @@ export default function TreeDetail() {
 
           {/* ─ Right: Booking card (sticky) ─ */}
           <div className="lg:self-start">
-            <div className="lg:sticky lg:top-6 space-y-4">
-              <div className="border border-gray-200 rounded-2xl shadow-lg shadow-black/5 bg-white overflow-hidden">
+            <div className="lg:sticky lg:top-6">
+              <div className="border border-gray-200 rounded-2xl shadow-lg shadow-black/5 bg-white">
                 {/* Price */}
-                <div className="px-5 pt-5 pb-4">
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-[22px] font-bold text-gray-900">
+                <div className="px-6 pt-6 pb-4">
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-2xl font-bold text-gray-900">
                       ₹{seasonPrice > 0 ? seasonPrice.toLocaleString('en-IN') : '—'}
                     </span>
-                    <span className="text-sm text-gray-500 font-normal">/ season</span>
+                    <span className="text-sm text-gray-500">/ season</span>
                   </div>
                 </div>
 
-                {/* Date inputs */}
-                <div className="mx-5 border border-gray-200 rounded-xl overflow-hidden mb-4">
-                  <div className="grid grid-cols-2 divide-x divide-gray-200">
-                    <DateCell
-                      label="Start date"
-                      min={new Date().toISOString().split('T')[0]}
-                      value={startDate}
-                      onChange={(v) => { setStartDate(v); setAvailability(null); }}
-                    />
-                    <DateCell
-                      label="End date"
-                      min={startDate || new Date().toISOString().split('T')[0]}
-                      value={endDate}
-                      onChange={(v) => { setEndDate(v); setAvailability(null); }}
-                    />
-                  </div>
-                </div>
-
-                <div className="px-5 pb-5 space-y-3">
-                  {/* CTA */}
+                {/* CTA */}
+                <div className="px-6 pb-3">
                   <button
-                    onClick={handleCheckAvailability}
-                    disabled={!startDate || !endDate || checking}
-                    className="w-full py-3 bg-primary text-white text-sm font-semibold rounded-xl hover:bg-primary-dark transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    onClick={() => setShowModal(true)}
+                    className="w-full py-3.5 bg-linear-to-r from-primary to-emerald-600 text-white text-base font-bold rounded-xl hover:brightness-105 transition-all shadow-md"
                   >
-                    {checking ? 'Checking...' : 'Check Availability'}
+                    Own This Tree
                   </button>
+                </div>
 
-                  {/* Result */}
-                  {availability && (
-                    availability.available ? (
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-2 text-sm">
-                          <svg className="w-5 h-5 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
-                          </svg>
-                          <span className="font-semibold text-emerald-700">Available for these dates</span>
-                        </div>
-                        <div className="text-sm space-y-1.5 text-gray-500">
-                          <div className="flex justify-between">
-                            <span>Season rate</span>
-                            <span className="text-gray-700">₹{seasonPrice.toLocaleString('en-IN')}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Delivery</span>
-                            <span className="text-gray-700">₹{DELIVERY_FEE.toLocaleString('en-IN')}</span>
-                          </div>
-                          <hr className="border-gray-100" />
-                          <div className="flex justify-between font-semibold text-gray-900">
-                            <span>Total</span>
-                            <span>₹{totalPrice.toLocaleString('en-IN')}</span>
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => setShowModal(true)}
-                          className="w-full py-3 bg-linear-to-r from-primary to-emerald-600 text-white font-bold rounded-xl hover:brightness-105 transition-all shadow-lg shadow-primary/20 text-sm"
-                        >
-                          Reserve — ₹{totalPrice.toLocaleString('en-IN')}
-                        </button>
+                {/* Price breakdown */}
+                <div className="px-6 pb-6 pt-2">
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between text-gray-500">
+                      <span className="underline decoration-dotted underline-offset-2">Season rate</span>
+                      <span className="text-gray-700">₹{seasonPrice > 0 ? seasonPrice.toLocaleString('en-IN') : '—'}</span>
+                    </div>
+                    <div className="flex justify-between text-gray-500">
+                      <span className="underline decoration-dotted underline-offset-2">Delivery fee</span>
+                      <span className="text-gray-700">₹{DELIVERY_FEE.toLocaleString('en-IN')}</span>
+                    </div>
+                    {tree.deposit > 0 && (
+                      <div className="flex justify-between text-gray-500">
+                        <span className="underline decoration-dotted underline-offset-2">Refundable deposit</span>
+                        <span className="text-gray-700">₹{Number(tree.deposit).toLocaleString('en-IN')}</span>
                       </div>
-                    ) : (
-                      <div className="flex items-center gap-2 text-sm bg-red-50 border border-red-100 rounded-xl px-3 py-2.5">
-                        <svg className="w-4 h-4 text-red-400 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clipRule="evenodd" />
-                        </svg>
-                        <span className="text-red-700">Not available for selected dates</span>
-                      </div>
-                    )
-                  )}
-
-                  {!availability && (
-                    <p className="text-xs text-gray-400 text-center">Select dates to check availability</p>
-                  )}
+                    )}
+                    <hr className="border-gray-200 my-3!" />
+                    <div className="flex justify-between font-semibold text-gray-900">
+                      <span>Total</span>
+                      <span>₹{(totalPrice + Number(tree.deposit || 0)).toLocaleString('en-IN')}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -354,8 +312,6 @@ export default function TreeDetail() {
       {showModal && (
         <BookingModal
           tree={tree}
-          startDate={startDate}
-          endDate={endDate}
           totalPrice={totalPrice}
           deposit={tree.deposit}
           onClose={() => setShowModal(false)}
@@ -380,21 +336,6 @@ function DetailItem({ label, value }) {
     <div>
       <p className="text-xs text-gray-400 mb-0.5">{label}</p>
       <p className="text-sm font-semibold text-gray-800">{value}</p>
-    </div>
-  );
-}
-
-function DateCell({ label, min, value, onChange }) {
-  return (
-    <div className="px-3 py-2.5">
-      <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">{label}</label>
-      <input
-        type="date"
-        min={min}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full text-sm text-gray-800 font-medium outline-none bg-transparent cursor-pointer"
-      />
     </div>
   );
 }
