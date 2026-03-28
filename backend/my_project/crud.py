@@ -27,9 +27,9 @@ def get_trees(
     if tree_type:
         q = q.filter(Tree.type == tree_type)
     if price_min is not None:
-        q = q.filter(Tree.price_per_day >= price_min)
+        q = q.filter(Tree.price_per_season >= price_min)
     if price_max is not None:
-        q = q.filter(Tree.price_per_day <= price_max)
+        q = q.filter(Tree.price_per_season <= price_max)
     if size:
         q = q.filter(Tree.size.ilike(f"%{size}%"))
     if maintenance is not None:
@@ -42,9 +42,9 @@ def get_trees(
         q = q.filter(Tree.city.ilike(f"%{city}%"))
 
     if sort_by == "price_low":
-        q = q.order_by(Tree.price_per_day.asc())
+        q = q.order_by(Tree.price_per_season.asc())
     elif sort_by == "price_high":
-        q = q.order_by(Tree.price_per_day.desc())
+        q = q.order_by(Tree.price_per_season.desc())
     elif sort_by == "name_asc":
         q = q.order_by(Tree.name.asc())
     elif sort_by == "name_desc":

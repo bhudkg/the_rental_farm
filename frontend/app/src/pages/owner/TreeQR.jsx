@@ -91,18 +91,10 @@ export default function TreeQR() {
             {[tree.location, tree.city, tree.state].filter(Boolean).join(', ')}
           </p>
         )}
-        {tree.speciality && (
-          <p className="text-xs text-gray-500 mt-2 italic max-w-xs mx-auto">{tree.speciality}</p>
-        )}
         <div className="mt-3 flex flex-wrap justify-center gap-2">
           <span className="inline-flex items-center bg-primary/10 text-primary px-3 py-1.5 rounded-full text-sm font-semibold">
-            ₹{tree.price_per_day}/day
+            ₹{tree.price_per_season != null ? Number(tree.price_per_season).toLocaleString('en-IN') : '—'}/season
           </span>
-          {tree.price_per_season && (
-            <span className="inline-flex items-center bg-amber-50 text-amber-700 px-3 py-1.5 rounded-full text-sm font-semibold">
-              ₹{tree.price_per_season.toLocaleString()}/season
-            </span>
-          )}
         </div>
         {tree.min_quantity > 1 && (
           <p className="text-xs text-blue-600 font-medium mt-2">Min {tree.min_quantity} trees guaranteed</p>

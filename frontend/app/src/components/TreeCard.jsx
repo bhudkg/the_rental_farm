@@ -58,11 +58,6 @@ export default function TreeCard({ tree }) {
           {tree.name}
         </h3>
 
-        {/* Speciality */}
-        {tree.speciality && (
-          <p className="text-[11px] text-gray-500 mb-2 line-clamp-2 leading-relaxed">{tree.speciality}</p>
-        )}
-
         {/* Location */}
         {(tree.city || tree.state) && (
           <div className="flex items-center gap-1 mb-2">
@@ -79,8 +74,10 @@ export default function TreeCard({ tree }) {
         {/* Min guarantee + Price */}
         <div className="flex items-end justify-between pt-2 border-t border-gray-50">
           <div>
-            <span className="text-lg font-bold text-gray-900">₹{tree.price_per_day}</span>
-            <span className="text-[11px] text-gray-400">/day</span>
+            <span className="text-lg font-bold text-gray-900">
+              ₹{tree.price_per_season != null ? Number(tree.price_per_season).toLocaleString('en-IN') : '—'}
+            </span>
+            <span className="text-[11px] text-gray-400">/season</span>
           </div>
           {tree.min_quantity > 1 && (
             <span className="text-[10px] bg-blue-50 text-blue-600 font-semibold px-1.5 py-0.5 rounded">

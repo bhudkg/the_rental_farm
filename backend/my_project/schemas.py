@@ -38,20 +38,19 @@ class TreeBase(BaseModel):
     name: str
     type: str
     variety: str | None = None
-    speciality: str | None = None
     description: str | None = None
     location: str | None = None
     city: str | None = None
     state: str | None = None
     latitude: float | None = None
     longitude: float | None = None
-    price_per_day: float = 0
-    price_per_month: float = 0
     price_per_season: float | None = None
     deposit: float = 0
     size: str | None = None
     min_quantity: int = 1
     available_quantity: int = 1
+    season_start: int | None = None
+    season_end: int | None = None
     maintenance_required: bool = False
     image_url: str | None = None
     image_urls: list[str] = []
@@ -70,20 +69,19 @@ class TreeUpdate(BaseModel):
     name: str | None = None
     type: str | None = None
     variety: str | None = None
-    speciality: str | None = None
     description: str | None = None
     location: str | None = None
     city: str | None = None
     state: str | None = None
     latitude: float | None = None
     longitude: float | None = None
-    price_per_day: float | None = None
-    price_per_month: float | None = None
     price_per_season: float | None = None
     deposit: float | None = None
     size: str | None = None
     min_quantity: int | None = None
     available_quantity: int | None = None
+    season_start: int | None = None
+    season_end: int | None = None
     maintenance_required: bool | None = None
     image_url: str | None = None
     image_urls: list[str] | None = None

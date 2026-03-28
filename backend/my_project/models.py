@@ -30,7 +30,6 @@ class Tree(Base):
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     type: Mapped[str] = mapped_column(String(50), nullable=False)
     variety: Mapped[str | None] = mapped_column(String(150), nullable=True)
-    speciality: Mapped[str | None] = mapped_column(String(500), nullable=True)
     description: Mapped[str] = mapped_column(String(2000), nullable=True)
 
     # Location
@@ -41,8 +40,6 @@ class Tree(Base):
     longitude: Mapped[float | None] = mapped_column(Float, nullable=True)
 
     # Pricing
-    price_per_day: Mapped[float] = mapped_column(Float, nullable=False, default=0)
-    price_per_month: Mapped[float] = mapped_column(Float, nullable=False, default=0)
     price_per_season: Mapped[float | None] = mapped_column(Float, nullable=True)
     deposit: Mapped[float] = mapped_column(Float, nullable=False, default=0)
 
@@ -50,6 +47,8 @@ class Tree(Base):
     size: Mapped[str] = mapped_column(String(50), nullable=True)
     min_quantity: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     available_quantity: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    season_start: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    season_end: Mapped[int | None] = mapped_column(Integer, nullable=True)
     maintenance_required: Mapped[bool] = mapped_column(Boolean, default=False)
     image_url: Mapped[str] = mapped_column(String(500), nullable=True)
     image_urls: Mapped[list[str] | None] = mapped_column(ARRAY(String(500)), nullable=True)

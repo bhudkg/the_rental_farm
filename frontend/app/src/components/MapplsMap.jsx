@@ -154,13 +154,6 @@ function MapplsMapInner({
   }, [mapId]);
 
   useEffect(() => {
-    if (!loaded || !mapRef.current) return;
-    if (center) {
-      try { mapRef.current.setCenter(center); } catch { /* not available */ }
-    }
-  }, [loaded, center]);
-
-  useEffect(() => {
     if (!loaded || !mapRef.current || !sdk) return;
 
     const addMarkers = () => {
@@ -176,19 +169,15 @@ function MapplsMapInner({
         try {
           const marker = sdk.marker({
             map: mapRef.current,
-            position: { lat: m.lat, lng: m.lng },
+            position: { lat: Number(m.lat), lng: Number(m.lng) },
+            popupHtml: m.popupHtml || `<div style="padding:4px;font-size:13px;"><strong>${m.name || 'Tree'}</strong></div>`,
+            popupOptions: { openPopup: false, autoClose: true, maxWidth: 250 },
           });
-          if (marker) {
-            if (m.popupHtml) {
-              try {
-                marker.setPopup(m.popupHtml);
-              } catch { /* popup not supported in this SDK version */ }
-            }
-            if (onMarkerClick && typeof marker.addListener === 'function') {
-              marker.addListener('click', () => onMarkerClick(m));
-            }
-            markerRefs.current.push(marker);
+
+          if (onMarkerClick && marker && typeof marker.addListener === 'function') {
+            marker.addListener('click', () => onMarkerClick(m));
           }
+          if (marker) markerRefs.current.push(marker);
         } catch { /* skip bad marker */ }
       });
 
@@ -204,7 +193,7 @@ function MapplsMapInner({
       }
     };
 
-    const timer = setTimeout(addMarkers, 500);
+    const timer = setTimeout(addMarkers, 600);
     return () => clearTimeout(timer);
   }, [loaded, markers, center, onMarkerClick]);
 

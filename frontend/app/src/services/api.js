@@ -116,16 +116,24 @@ export const reverseGeocode = async (lat, lng) => {
   if (lat == null || lng == null) return null;
   try {
     const res = await axios.get('https://nominatim.openstreetmap.org/reverse', {
-      params: { lat, lon: lng, format: 'json', 'accept-language': 'en' },
+      params: { lat, lon: lng, format: 'json', 'accept-language': 'en', addressdetails: 1 },
       headers: { 'User-Agent': 'TheRentalFarm/1.0' },
     });
     const addr = res.data?.address;
+    const displayName = res.data?.display_name || '';
     if (!addr) return null;
-    return {
-      city: addr.city || addr.town || addr.state_district || addr.county || '',
-      state: addr.state || '',
-      area: addr.suburb || addr.village || addr.county || '',
-    };
+
+    const city = addr.city || addr.town || addr.state_district || addr.county || '';
+    const state = addr.state || '';
+
+    const stripFromArea = [state, addr.country].filter(Boolean);
+    const area = displayName
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => s && !stripFromArea.includes(s))
+      .join(', ');
+
+    return { city, state, area };
   } catch {
     return null;
   }

@@ -29,8 +29,7 @@ def create_order(
     if not avail["available"]:
         raise HTTPException(status_code=409, detail="Tree not available for selected dates")
 
-    total_days = (body.end_date - body.start_date).days
-    total_price = total_days * tree.price_per_day
+    total_price = (tree.price_per_season or 0) + 1000
 
     # Use authenticated user, or fall back to a guest user for MVP
     user_id = current_user.id if current_user else _get_or_create_guest(db)

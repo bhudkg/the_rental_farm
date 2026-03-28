@@ -39,10 +39,10 @@ export default function TreeDetail() {
     }
   };
 
-  const totalDays = startDate && endDate
-    ? Math.ceil((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24))
+  const DELIVERY_FEE = 1000;
+  const totalPrice = tree
+    ? (Number(tree.price_per_season) || 0) + DELIVERY_FEE
     : 0;
-  const totalPrice = tree ? totalDays * tree.price_per_day : 0;
 
   if (loading) {
     return (
@@ -151,32 +151,16 @@ export default function TreeDetail() {
             </div>
           )}
 
-          {/* Speciality badge */}
-          {tree.speciality && (
-            <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 mb-4">
-              <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-0.5">Speciality</p>
-              <p className="text-sm text-amber-800">{tree.speciality}</p>
-            </div>
-          )}
-
           <p className="text-gray-500 mb-6 leading-relaxed">{tree.description}</p>
 
           {/* Info grid */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
-            <div className="bg-gray-50 rounded-xl p-3">
-              <p className="text-[11px] text-gray-400 mb-0.5">Daily Rate</p>
-              <p className="text-lg font-bold text-gray-900">₹{tree.price_per_day}</p>
+            <div className="bg-primary/5 border border-primary/20 rounded-xl p-3">
+              <p className="text-[11px] text-primary mb-0.5">Season Rate</p>
+              <p className="text-lg font-bold text-primary">
+                ₹{tree.price_per_season != null ? Number(tree.price_per_season).toLocaleString('en-IN') : '—'}
+              </p>
             </div>
-            <div className="bg-gray-50 rounded-xl p-3">
-              <p className="text-[11px] text-gray-400 mb-0.5">Monthly Rate</p>
-              <p className="text-lg font-bold text-gray-900">₹{tree.price_per_month}</p>
-            </div>
-            {tree.price_per_season && (
-              <div className="bg-primary/5 border border-primary/20 rounded-xl p-3">
-                <p className="text-[11px] text-primary mb-0.5">Season Rate</p>
-                <p className="text-lg font-bold text-primary">₹{tree.price_per_season.toLocaleString()}</p>
-              </div>
-            )}
             <div className="bg-gray-50 rounded-xl p-3">
               <p className="text-[11px] text-gray-400 mb-0.5">Deposit</p>
               <p className="text-lg font-bold text-gray-900">₹{tree.deposit}</p>
@@ -222,8 +206,10 @@ export default function TreeDetail() {
               >
                 {availability.available ? (
                   <>
-                    Available! {totalDays} days &times; ₹{tree.price_per_day}/day ={' '}
-                    <span className="font-bold">₹{totalPrice.toFixed(2)}</span>
+                    Available! Season ₹
+                    {tree.price_per_season != null ? Number(tree.price_per_season).toLocaleString('en-IN') : '—'} + ₹
+                    {DELIVERY_FEE.toLocaleString('en-IN')} delivery ={' '}
+                    <span className="font-bold">₹{totalPrice.toLocaleString('en-IN')}</span>
                   </>
                 ) : (
                   'Sorry, this tree is not available for the selected dates.'
@@ -236,7 +222,7 @@ export default function TreeDetail() {
                 onClick={() => setShowModal(true)}
                 className="w-full py-3.5 bg-primary text-white font-semibold rounded-xl hover:bg-primary-dark transition-colors shadow-lg shadow-primary/20"
               >
-                Book Now &mdash; ₹{totalPrice.toFixed(2)}
+                Book Now &mdash; ₹{totalPrice.toLocaleString('en-IN')}
               </button>
             )}
           </div>

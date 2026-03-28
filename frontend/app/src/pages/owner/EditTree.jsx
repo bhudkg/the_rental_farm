@@ -6,6 +6,7 @@ import { fetchTree, updateTree } from '../../services/api';
 
 const TYPES = ['mango', 'banana', 'orange', 'lemon', 'coconut', 'guava', 'apple', 'papaya', 'pomegranate', 'jackfruit', 'chiku'];
 const SIZES = ['Small (1-2 ft)', 'Medium (3-4 ft)', 'Large (5-6 ft)', 'Extra Large (7-8 ft)'];
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 const INDIAN_STATES = [
   'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa',
@@ -44,6 +45,9 @@ export default function EditTree() {
           latitude: tree.latitude ?? '',
           longitude: tree.longitude ?? '',
           min_quantity: tree.min_quantity || 1,
+          price_per_season: tree.price_per_season || '',
+          season_start: tree.season_start || '',
+          season_end: tree.season_end || '',
           size: tree.size || 'Medium (3-4 ft)',
           image_urls: urls,
         });
@@ -99,6 +103,9 @@ export default function EditTree() {
         latitude: form.latitude !== '' ? parseFloat(form.latitude) : null,
         longitude: form.longitude !== '' ? parseFloat(form.longitude) : null,
         min_quantity: parseInt(form.min_quantity, 10),
+        price_per_season: form.price_per_season ? parseFloat(form.price_per_season) : null,
+        season_start: form.season_start ? parseInt(form.season_start, 10) : null,
+        season_end: form.season_end ? parseInt(form.season_end, 10) : null,
         size: form.size,
         image_urls: form.image_urls,
         image_url: form.image_urls[0] || null,
@@ -205,13 +212,56 @@ export default function EditTree() {
           />
         </fieldset>
 
+        {/* Season & Pricing */}
+        <fieldset className="space-y-4">
+          <legend className="text-xs font-bold text-gray-400 uppercase tracking-wider">Season &amp; Pricing</legend>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={labelClass}>Season Start *</label>
+              <select value={form.season_start} onChange={update('season_start')} required className={`${inputClass} bg-white`}>
+                <option value="">Select month</option>
+                {MONTHS.map((m, i) => (
+                  <option key={m} value={i + 1}>{m}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className={labelClass}>Season End *</label>
+              <select value={form.season_end} onChange={update('season_end')} required className={`${inputClass} bg-white`}>
+                <option value="">Select month</option>
+                {MONTHS.map((m, i) => (
+                  <option key={m} value={i + 1}>{m}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          {form.season_start && form.season_end && (
+            <p className="text-xs text-gray-500 bg-gray-50 rounded-lg px-3 py-2">
+              Season: <span className="font-medium text-gray-700">{MONTHS[form.season_start - 1]}</span> to <span className="font-medium text-gray-700">{MONTHS[form.season_end - 1]}</span>
+            </p>
+          )}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={labelClass}>Price per Season (₹) *</label>
+              <input type="number" step="0.01" required value={form.price_per_season} onChange={update('price_per_season')} placeholder="e.g. 4500" className={inputClass} />
+            </div>
+            <div>
+              <label className={labelClass}>Price with Delivery (₹)</label>
+              <div className={`${inputClass} bg-gray-50 text-gray-600`}>
+                {form.price_per_season ? `₹${(parseFloat(form.price_per_season) + 1000).toLocaleString('en-IN')}` : '—'}
+              </div>
+              <p className="text-[11px] text-gray-400 mt-1">Season price + ₹1,000 delivery</p>
+            </div>
+          </div>
+        </fieldset>
+
         {/* Details */}
         <fieldset className="space-y-4">
           <legend className="text-xs font-bold text-gray-400 uppercase tracking-wider">Details</legend>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className={labelClass}>Min Quantity Guarantee</label>
-              <input type="number" min="1" value={form.min_quantity} onChange={update('min_quantity')} className={inputClass} />
+              <label className={labelClass}>Min Yield Guarantee (kg/season)</label>
+              <input type="number" min="1" value={form.min_quantity} onChange={update('min_quantity')} placeholder="e.g. 50" className={inputClass} />
             </div>
             <div>
               <label className={labelClass}>Size</label>

@@ -114,21 +114,29 @@ export default function LocationPicker({ city, state, latitude, longitude, onCha
         <p className="text-xs text-red-500">{error}</p>
       )}
 
-      {/* Map preview */}
+      {/* Map preview with center pin */}
       {hasCoords && (
-        <MapplsMap
-          center={[lat, lng]}
-          zoom={12}
-          height="200px"
-          mapId="location-picker-map"
-          markers={[{
-            id: 'picked',
-            lat,
-            lng,
-            name: 'Tree location',
-            popupHtml: `<div style="padding:4px;font-size:13px;font-family:system-ui,sans-serif;"><strong>Tree location</strong><br/><span style="color:#666;">${[city, state].filter(Boolean).join(', ')}</span></div>`,
-          }]}
-        />
+        <div className="relative">
+          <MapplsMap
+            center={[lat, lng]}
+            zoom={14}
+            height="200px"
+            mapId="location-picker-map"
+            markers={[{
+              id: 'picked',
+              lat,
+              lng,
+              name: 'Tree location',
+              popupHtml: `<div style="padding:4px;font-size:13px;font-family:system-ui,sans-serif;"><strong>Tree location</strong><br/><span style="color:#666;">${[city, state].filter(Boolean).join(', ')}</span></div>`,
+            }]}
+          />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-full z-10 pointer-events-none">
+            <svg width="32" height="42" viewBox="0 0 32 42" fill="none">
+              <path d="M16 0C7.163 0 0 7.163 0 16c0 12 16 26 16 26s16-14 16-26C32 7.163 24.837 0 16 0z" fill="#E53E3E"/>
+              <circle cx="16" cy="16" r="6" fill="white"/>
+            </svg>
+          </div>
+        </div>
       )}
 
       {!hasCoords && !geocoding && !detecting && (

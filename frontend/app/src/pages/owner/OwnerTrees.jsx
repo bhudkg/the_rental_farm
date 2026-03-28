@@ -77,8 +77,9 @@ export default function OwnerTrees() {
                   {tree.type}{tree.variety ? ` — ${tree.variety}` : ''} &middot; {tree.size}
                 </p>
                 <p className="text-sm text-gray-500 mt-0.5">
-                  ₹{tree.price_per_day}/day &middot; ₹{tree.price_per_month}/mo
-                  {tree.price_per_season ? ` · ₹${tree.price_per_season.toLocaleString()}/season` : ''}
+                  {tree.price_per_season != null
+                    ? `₹${Number(tree.price_per_season).toLocaleString('en-IN')}/season`
+                    : '—'}
                 </p>
                 {(tree.city || tree.state) && (
                   <p className="text-xs text-gray-400 mt-0.5">{[tree.city, tree.state].filter(Boolean).join(', ')}</p>

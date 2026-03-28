@@ -335,7 +335,7 @@ export default function Trees() {
                       <strong style="font-size:14px;display:block;margin-bottom:4px;">${t.name}</strong>
                       <span style="font-size:12px;color:#666;">${t.type} ${t.variety ? '&middot; ' + t.variety : ''}</span><br/>
                       <span style="font-size:12px;color:#666;">${[t.city, t.state].filter(Boolean).join(', ')}</span><br/>
-                      <span style="font-size:14px;font-weight:600;color:#16a34a;">&#8377;${t.price_per_day}/day</span><br/>
+                      <span style="font-size:14px;font-weight:600;color:#16a34a;">&#8377;${t.price_per_season != null ? Number(t.price_per_season).toLocaleString('en-IN') : '—'}/season</span><br/>
                       <a href="/trees/${t.id}" style="display:inline-block;margin-top:6px;font-size:12px;color:#2563eb;text-decoration:underline;">View Details &rarr;</a>
                     </div>`,
                 }))}
