@@ -4,7 +4,7 @@ import ImageUploader from '../../components/ImageUploader';
 import LocationPicker from '../../components/LocationPicker';
 import { fetchTree, updateTree } from '../../services/api';
 
-const TYPES = ['mango', 'banana', 'orange', 'lemon', 'coconut', 'guava', 'apple', 'papaya', 'pomegranate', 'jackfruit', 'chiku'];
+const TYPES = ['mango', 'banana', 'orange', 'lemon', 'coconut', 'guava', 'grapes', 'apple', 'papaya', 'pomegranate', 'jackfruit', 'chiku'];
 const SIZES = ['Small (1-2 ft)', 'Medium (3-4 ft)', 'Large (5-6 ft)', 'Extra Large (7-8 ft)'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 

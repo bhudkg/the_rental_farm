@@ -6,7 +6,7 @@ import { fetchTrees } from '../services/api';
 
 const TYPES = [
   'all', 'mango', 'banana', 'orange', 'lemon', 'coconut',
-  'guava', 'apple', 'papaya', 'pomegranate', 'jackfruit', 'chiku',
+  'guava', 'grapes', 'apple', 'papaya', 'pomegranate', 'jackfruit', 'chiku',
 ];
 
 const PRICE_RANGES = [

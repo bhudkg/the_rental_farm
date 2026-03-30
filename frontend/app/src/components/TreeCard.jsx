@@ -7,6 +7,7 @@ const TYPE_COLORS = {
   lemon: 'bg-lime-100 text-lime-700',
   coconut: 'bg-amber-100 text-amber-700',
   guava: 'bg-green-100 text-green-700',
+  grapes: 'bg-purple-100 text-purple-700',
   apple: 'bg-red-100 text-red-700',
   papaya: 'bg-orange-50 text-orange-600',
   pomegranate: 'bg-rose-100 text-rose-700',
