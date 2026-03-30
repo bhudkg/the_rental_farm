@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI
+from fastapi.responses import RedirectResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -38,6 +39,18 @@ app.include_router(trees.router)
 app.include_router(orders.router)
 app.include_router(owner.router)
 app.include_router(images.router)
+
+
+@app.get("/")
+async def home():
+    # Browsers often hit "/" first; redirect to docs instead of returning 404.
+    return RedirectResponse(url="/docs")
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    # Return empty favicon response to avoid noisy 404 logs.
+    return Response(status_code=204)
 
 
 @app.get("/api")

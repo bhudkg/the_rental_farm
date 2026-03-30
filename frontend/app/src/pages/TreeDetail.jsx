@@ -61,32 +61,70 @@ export default function TreeDetail() {
         </nav>
 
         {/* ── Image Gallery ── */}
-        <div className="relative mb-7 rounded-2xl overflow-hidden">
-          {images.length >= 3 ? (
-            <div className="grid grid-cols-4 grid-rows-2 gap-1.5 h-[280px] sm:h-[340px]">
-              <button type="button" onClick={() => { setActiveImg(0); setShowAllPhotos(true); }} className="col-span-2 row-span-2 relative group cursor-pointer overflow-hidden">
-                <img src={images[0]} alt={tree.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onError={(e) => { e.target.src = PLACEHOLDER_IMG; }} />
+        <div className="relative mb-7 rounded-2xl overflow-hidden bg-gray-100">
+          {images.length > 1 ? (
+            <div className="relative w-full h-[280px] sm:h-[400px] group">
+              <img
+                src={images[activeImg]}
+                alt=""
+                aria-hidden="true"
+                className="absolute inset-0 w-full h-full object-cover blur-md scale-110 opacity-35 transition-all duration-300"
+                onError={(e) => { e.target.src = PLACEHOLDER_IMG; }}
+              />
+              <img
+                src={images[activeImg]}
+                alt={tree.name}
+                className="relative z-10 w-full h-full object-contain cursor-pointer transition-all duration-300"
+                onClick={() => setShowAllPhotos(true)}
+                onError={(e) => { e.target.src = PLACEHOLDER_IMG; }}
+              />
+              
+              {/* Prev Button */}
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setActiveImg((prev) => (prev - 1 + images.length) % images.length); }}
+                className="absolute left-4 top-1/2 -translate-y-1/2 z-20 p-2 bg-white/80 hover:bg-white text-gray-800 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
               </button>
-              {images.slice(1, 5).map((url, idx) => (
-                <button key={url} type="button" onClick={() => { setActiveImg(idx + 1); setShowAllPhotos(true); }} className="relative group cursor-pointer overflow-hidden">
-                  <img src={url} alt={`${tree.name} ${idx + 2}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onError={(e) => { e.target.src = PLACEHOLDER_IMG; }} />
-                </button>
-              ))}
-              {images.length < 5 && Array.from({ length: 5 - images.length }).map((_, i) => (
-                <div key={`ph-${i}`} className="bg-gray-100" />
-              ))}
-            </div>
-          ) : images.length === 2 ? (
-            <div className="grid grid-cols-2 gap-1.5 h-[280px] sm:h-[340px]">
-              {images.map((url, idx) => (
-                <button key={url} type="button" onClick={() => { setActiveImg(idx); setShowAllPhotos(true); }} className="relative group cursor-pointer overflow-hidden">
-                  <img src={url} alt={`${tree.name} ${idx + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onError={(e) => { e.target.src = PLACEHOLDER_IMG; }} />
-                </button>
-              ))}
+
+              {/* Next Button */}
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setActiveImg((prev) => (prev + 1) % images.length); }}
+                className="absolute right-4 top-1/2 -translate-y-1/2 z-20 p-2 bg-white/80 hover:bg-white text-gray-800 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+              </button>
+
+              {/* Dots */}
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex gap-1.5">
+                {images.map((_, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setActiveImg(idx); }}
+                    className={`h-2 rounded-full transition-all ${idx === activeImg ? 'bg-white w-4' : 'bg-white/60 hover:bg-white/80 w-2'}`}
+                  />
+                ))}
+              </div>
             </div>
           ) : (
-            <button type="button" onClick={() => setShowAllPhotos(true)} className="w-full h-[280px] sm:h-[340px] cursor-pointer overflow-hidden group">
-              <img src={images[0]} alt={tree.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onError={(e) => { e.target.src = PLACEHOLDER_IMG; }} />
+            <button type="button" onClick={() => setShowAllPhotos(true)} className="relative w-full h-[280px] sm:h-[400px] cursor-pointer overflow-hidden bg-gray-100">
+              {/* Full-width backdrop keeps the section visually rich even for portrait photos */}
+              <img
+                src={images[0]}
+                alt=""
+                aria-hidden="true"
+                className="absolute inset-0 w-full h-full object-cover blur-md scale-110 opacity-35"
+                onError={(e) => { e.target.src = PLACEHOLDER_IMG; }}
+              />
+              <img
+                src={images[0]}
+                alt={tree.name}
+                className="relative z-10 w-full h-full object-contain"
+                onError={(e) => { e.target.src = PLACEHOLDER_IMG; }}
+              />
             </button>
           )}
 
@@ -94,7 +132,7 @@ export default function TreeDetail() {
             <button
               type="button"
               onClick={() => setShowAllPhotos(true)}
-              className="absolute bottom-3 right-3 px-3.5 py-2 bg-white border border-gray-200 rounded-lg text-xs font-semibold text-gray-700 hover:bg-gray-50 shadow-sm transition-all flex items-center gap-1.5"
+              className="absolute top-4 right-4 z-20 px-3.5 py-2 bg-white border border-gray-200 rounded-lg text-xs font-semibold text-gray-700 hover:bg-gray-50 shadow-sm transition-all flex items-center gap-1.5"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />

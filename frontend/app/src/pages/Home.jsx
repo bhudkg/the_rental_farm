@@ -11,6 +11,7 @@ const CATEGORIES = [
   { type: 'lemon', label: 'Lemon', img: 'https://img.icons8.com/color/96/citrus.png' },
   { type: 'coconut', label: 'Coconut', img: 'https://img.icons8.com/color/96/coconut.png' },
   { type: 'guava', label: 'Guava', img: 'https://img.icons8.com/color/96/pear.png' },
+  { type: 'grapes', label: 'Grapes', img: 'https://img.icons8.com/color/96/grapes.png' },
   { type: 'apple', label: 'Apple', img: 'https://img.icons8.com/color/96/apple.png' },
   { type: 'papaya', label: 'Papaya', img: 'https://img.icons8.com/color/96/papaya.png' },
   { type: 'pomegranate', label: 'Pomegranate', img: 'https://img.icons8.com/color/96/pomegranate.png' },

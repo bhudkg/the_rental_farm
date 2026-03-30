@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { login, register } from '../services/api';
 import useStore from '../store/useStore';
@@ -9,8 +9,16 @@ export default function Login() {
 
   const [isRegister, setIsRegister] = useState(false);
   const [form, setForm] = useState({ name: '', email: '', password: '' });
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    // Keep Sign in and Sign up forms independent.
+    setForm({ name: '', email: '', password: '' });
+    setShowPassword(false);
+    setError(null);
+  }, [isRegister]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -34,6 +42,10 @@ export default function Login() {
   };
 
   const update = (field) => (e) => setForm({ ...form, [field]: e.target.value });
+  const handleModeToggle = () => {
+    setIsRegister((prev) => !prev);
+    setLoading(false);
+  };
 
   return (
     <div className="min-h-[70vh] flex items-center justify-center px-4">
@@ -77,14 +89,33 @@ export default function Login() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-            <input
-              type="password"
-              required
-              value={form.password}
-              onChange={update('password')}
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
-              placeholder="••••••••"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                required
+                value={form.password}
+                onChange={update('password')}
+                className="w-full px-4 py-2.5 pr-11 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                placeholder="••••••••"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute inset-y-0 right-0 px-3 text-gray-500 hover:text-gray-700"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? (
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.46 12C3.73 7.94 7.5 5 12 5s8.27 2.94 9.54 7c-1.27 4.06-5.04 7-9.54 7s-8.27-2.94-9.54-7z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 3l18 18M10.73 5.08A10.45 10.45 0 0112 5c4.5 0 8.27 2.94 9.54 7a10.96 10.96 0 01-4.14 5.35M6.61 6.61A10.96 10.96 0 002.46 12a10.45 10.45 0 005.27 6.58M9.88 9.88a3 3 0 104.24 4.24" />
+                  </svg>
+                )}
+              </button>
+            </div>
           </div>
 
           {error && (
@@ -107,7 +138,8 @@ export default function Login() {
         <p className="text-center text-sm text-gray-500 mt-4">
           {isRegister ? 'Already have an account?' : "Don't have an account?"}{' '}
           <button
-            onClick={() => { setIsRegister(!isRegister); setError(null); }}
+            type="button"
+            onClick={handleModeToggle}
             className="text-primary font-medium hover:underline"
           >
             {isRegister ? 'Sign in' : 'Sign up'}

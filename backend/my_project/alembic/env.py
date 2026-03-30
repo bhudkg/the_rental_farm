@@ -12,7 +12,13 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "..", "..", ".env"))
 
 config = context.config
-config.set_main_option("sqlalchemy.url", os.getenv("DATABASE_URL"))
+_database_url = os.getenv("DATABASE_URL")
+if not _database_url:
+    raise RuntimeError(
+        "DATABASE_URL is not set. Add DATABASE_URL=... to backend/.env (no spaces around =)."
+    )
+# Alembic stores the URL in ConfigParser; literal % in passwords (e.g. %40) must be escaped.
+config.set_main_option("sqlalchemy.url", _database_url.replace("%", "%%"))
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
