@@ -58,6 +58,15 @@ export const fetchOrders = () => api.get('/orders').then((r) => r.data);
 
 export const fetchOrder = (id) => api.get(`/orders/${id}`).then((r) => r.data);
 
+export const verifyPayment = (orderId, paymentData) =>
+  api.post(`/orders/${orderId}/payment/verify`, paymentData).then((r) => r.data);
+
+export const getPaymentStatus = (orderId) =>
+  api.get(`/orders/${orderId}/payment-status`).then((r) => r.data);
+
+export const cancelOrder = (orderId) =>
+  api.post(`/orders/${orderId}/cancel`).then((r) => r.data);
+
 // ── Auth ──
 
 export const register = (data) => api.post('/auth/register', data).then((r) => r.data);

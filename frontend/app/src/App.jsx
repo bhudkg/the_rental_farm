@@ -9,6 +9,8 @@ import TreeDetail from './pages/TreeDetail';
 import Orders from './pages/Orders';
 import OrderDetail from './pages/OrderDetail';
 import Login from './pages/Login';
+import PaymentSuccess from './pages/PaymentSuccess';
+import PaymentFailure from './pages/PaymentFailure';
 import OwnerDashboard from './pages/owner/OwnerDashboard';
 import OwnerTrees from './pages/owner/OwnerTrees';
 import AddTree from './pages/owner/AddTree';
@@ -43,6 +45,8 @@ export default function App() {
             <Route path="/orders" element={<Orders />} />
             <Route path="/orders/:id" element={<OrderDetail />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/payment-success" element={<PaymentSuccess />} />
+            <Route path="/payment-failure" element={<PaymentFailure />} />
 
             <Route path="/owner" element={<RequireOwner><OwnerDashboard /></RequireOwner>} />
             <Route path="/owner/trees" element={<RequireOwner><OwnerTrees /></RequireOwner>} />

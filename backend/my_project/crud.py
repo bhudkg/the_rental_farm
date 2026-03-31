@@ -30,8 +30,6 @@ def get_trees(
         q = q.filter(Tree.price_per_season <= price_max)
     if size:
         q = q.filter(Tree.size.ilike(f"%{size}%"))
-    if maintenance is not None:
-        q = q.filter(Tree.maintenance_required == maintenance)
     if search:
         q = q.filter(Tree.name.ilike(f"%{search}%"))
     if state:

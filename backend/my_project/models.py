@@ -41,15 +41,12 @@ class Tree(Base):
 
     # Pricing
     price_per_season: Mapped[float | None] = mapped_column(Float, nullable=True)
-    deposit: Mapped[float] = mapped_column(Float, nullable=False, default=0)
 
     # Details
     size: Mapped[str] = mapped_column(String(50), nullable=True)
     min_quantity: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
-    available_quantity: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     season_start: Mapped[int | None] = mapped_column(Integer, nullable=True)
     season_end: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    maintenance_required: Mapped[bool] = mapped_column(Boolean, default=False)
     image_url: Mapped[str] = mapped_column(String(500), nullable=True)
     image_urls: Mapped[list[str] | None] = mapped_column(ARRAY(String(500)), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
@@ -65,9 +62,16 @@ class Order(Base):
     user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     tree_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("trees.id"), nullable=False)
     total_price: Mapped[float] = mapped_column(Float, nullable=False)
-    deposit: Mapped[float] = mapped_column(Float, nullable=False, default=0)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    
+    payment_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    payment_gateway: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    payment_status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
+    payment_method: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    payment_captured_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    refund_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    refunded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     user: Mapped["User"] = relationship(back_populates="orders")
     tree: Mapped["Tree"] = relationship(back_populates="orders")

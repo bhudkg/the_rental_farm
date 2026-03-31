@@ -45,13 +45,10 @@ class TreeBase(BaseModel):
     latitude: float | None = None
     longitude: float | None = None
     price_per_season: float | None = None
-    deposit: float = 0
     size: str | None = None
     min_quantity: int = 1
-    available_quantity: int = 1
     season_start: int | None = None
     season_end: int | None = None
-    maintenance_required: bool = False
     image_url: str | None = None
     image_urls: list[str] = []
 
@@ -76,13 +73,10 @@ class TreeUpdate(BaseModel):
     latitude: float | None = None
     longitude: float | None = None
     price_per_season: float | None = None
-    deposit: float | None = None
     size: str | None = None
     min_quantity: int | None = None
-    available_quantity: int | None = None
     season_start: int | None = None
     season_end: int | None = None
-    maintenance_required: bool | None = None
     image_url: str | None = None
     image_urls: list[str] | None = None
 
@@ -118,9 +112,38 @@ class OrderOut(BaseModel):
     user_id: uuid.UUID
     tree_id: uuid.UUID
     total_price: float
-    deposit: float
     status: str
     created_at: datetime
     tree: TreeOut | None = None
+    payment_id: str | None = None
+    payment_gateway: str | None = None
+    payment_status: str = "pending"
+    payment_method: str | None = None
+    payment_captured_at: datetime | None = None
+    refund_id: str | None = None
+    refunded_at: datetime | None = None
 
     model_config = {"from_attributes": True}
+
+
+# ── Payment ──
+
+class PaymentDetailsOut(BaseModel):
+    gateway: str
+    order_id: str | None = None
+    amount: float
+    currency: str
+    key: str | None = None
+    client_secret: str | None = None
+    payment_intent_id: str | None = None
+
+
+class PaymentVerifyRequest(BaseModel):
+    payment_id: str
+    order_id: str
+    signature: str
+
+
+class PaymentStatusOut(BaseModel):
+    payment_status: str
+    order_status: str

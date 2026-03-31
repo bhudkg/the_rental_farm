@@ -1,26 +1,86 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createOrder } from '../services/api';
+import { createOrder, verifyPayment } from '../services/api';
 
 export default function BookingModal({ tree, totalPrice, deposit, onClose }) {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [razorpayLoaded, setRazorpayLoaded] = useState(false);
 
   const DELIVERY_FEE = 1000;
   const seasonPrice = Number(tree.price_per_season) || 0;
+
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    script.onload = () => setRazorpayLoaded(true);
+    document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
 
   const handleConfirm = async () => {
     setLoading(true);
     setError(null);
     try {
-      const order = await createOrder({
+      const response = await createOrder({
         tree_id: tree.id,
       });
-      navigate(`/orders/${order.id}`);
+      
+      const orderData = response.order;
+      const paymentData = response.payment;
+      
+      if (paymentData.gateway === 'razorpay') {
+        if (!razorpayLoaded || !window.Razorpay) {
+          setError('Payment system not loaded. Please refresh and try again.');
+          setLoading(false);
+          return;
+        }
+        
+        const options = {
+          key: paymentData.key,
+          amount: paymentData.amount * 100,
+          currency: paymentData.currency,
+          order_id: paymentData.order_id,
+          name: 'The Rental Farm',
+          description: `Rental for ${tree.name}`,
+          image: tree.image_urls?.[0] || tree.image_url,
+          handler: async function (razorpayResponse) {
+            try {
+              await verifyPayment(orderData.id, {
+                payment_id: razorpayResponse.razorpay_payment_id,
+                order_id: razorpayResponse.razorpay_order_id,
+                signature: razorpayResponse.razorpay_signature,
+              });
+              navigate(`/payment-success?order_id=${orderData.id}`);
+            } catch (verifyError) {
+              setError('Payment verification failed. Please contact support.');
+              setLoading(false);
+            }
+          },
+          modal: {
+            ondismiss: function () {
+              setLoading(false);
+              setError('Payment cancelled. You can try again.');
+            },
+          },
+          theme: {
+            color: '#10b981',
+          },
+        };
+        
+        const razorpay = new window.Razorpay(options);
+        razorpay.open();
+      } else if (paymentData.gateway === 'stripe') {
+        setError('Stripe integration not yet implemented in UI');
+        setLoading(false);
+      }
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to place order');
-    } finally {
       setLoading(false);
     }
   };

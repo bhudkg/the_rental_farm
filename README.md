@@ -130,6 +130,14 @@ API calls are proxied to the backend via Vite config.
 | `SECRET_KEY` | JWT signing secret | `change-me-to-a-real-secret-key` |
 | `DEBUG` | Enable debug mode | `true` |
 | `ALLOWED_ORIGINS` | CORS allowed origins | `http://localhost:5173` |
+| `RAZORPAY_KEY_ID` | Razorpay API key ID | `rzp_test_xxxxx` |
+| `RAZORPAY_KEY_SECRET` | Razorpay API secret | Required for Razorpay |
+| `RAZORPAY_WEBHOOK_SECRET` | Razorpay webhook secret | Required for webhook verification |
+| `STRIPE_SECRET_KEY` | Stripe secret key | `sk_test_xxxxx` |
+| `STRIPE_PUBLISHABLE_KEY` | Stripe publishable key | `pk_test_xxxxx` |
+| `STRIPE_WEBHOOK_SECRET` | Stripe webhook secret | Required for webhook verification |
+| `PAYMENT_GATEWAY` | Active payment gateway | `razorpay` (or `stripe`) |
+| `PAYMENT_CURRENCY` | Payment currency | `INR` |
 
 ---
 
@@ -146,8 +154,13 @@ API calls are proxied to the backend via Vite config.
 | `PUT` | `/api/trees/:id` | Update tree (owner) |
 | `DELETE` | `/api/trees/:id` | Delete tree (owner) |
 | `POST` | `/api/trees/:id/availability` | Check availability |
-| `POST` | `/api/orders` | Place order |
+| `POST` | `/api/orders` | Place order + create payment |
 | `GET` | `/api/orders` | My orders |
+| `POST` | `/api/orders/:id/payment/verify` | Verify payment signature |
+| `GET` | `/api/orders/:id/payment-status` | Get payment status |
+| `POST` | `/api/orders/:id/cancel` | Cancel order + refund |
+| `POST` | `/api/webhooks/razorpay` | Razorpay webhook handler |
+| `POST` | `/api/webhooks/stripe` | Stripe webhook handler |
 | `GET` | `/api/owner/trees` | Owner's trees |
 | `GET` | `/api/owner/orders` | Orders on owner's trees |
 | `GET` | `/api/owner/stats` | Owner dashboard stats |
@@ -160,6 +173,51 @@ API calls are proxied to the backend via Vite config.
 
 - **Renter** (default) — Browse trees, check availability, place orders, track rentals.
 - **Owner** — List trees with full details (variety, location, pricing), manage listings, view orders, generate QR codes.
+
+---
+
+## Payment Integration
+
+The platform supports secure online payments through **Razorpay** (India) and **Stripe** (Global).
+
+### Features
+
+- Multiple payment methods: UPI, Cards, Net Banking, Wallets, EMI
+- Secure payment processing (PCI DSS compliant)
+- Real-time payment verification
+- Webhook-based status updates
+- Automatic refund processing on cancellation
+- Payment receipts and transaction history
+
+### Setup
+
+1. **Get API Keys:**
+   - Razorpay: Sign up at https://dashboard.razorpay.com/signup
+   - Stripe: Sign up at https://dashboard.stripe.com/register
+
+2. **Add to `.env`:**
+   ```bash
+   RAZORPAY_KEY_ID=rzp_test_xxxxx
+   RAZORPAY_KEY_SECRET=xxxxx
+   RAZORPAY_WEBHOOK_SECRET=xxxxx
+   PAYMENT_GATEWAY=razorpay
+   PAYMENT_CURRENCY=INR
+   ```
+
+3. **Install Dependencies:**
+   ```bash
+   cd backend/my_project
+   uv sync
+   ```
+
+4. **Run Migration:**
+   ```bash
+   uv run alembic upgrade head
+   ```
+
+### Testing
+
+See [PAYMENT_TESTING.md](PAYMENT_TESTING.md) for comprehensive testing guide with test cards and webhook setup.
 
 ---
 
