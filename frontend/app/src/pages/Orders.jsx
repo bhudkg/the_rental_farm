@@ -88,8 +88,7 @@ export default function Orders() {
                   </p>
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="font-bold text-gray-900">₹{order.total_price.toFixed(2)}</p>
-                  <p className="text-xs text-gray-400">+ ₹{order.deposit.toFixed(2)} deposit</p>
+                  <p className="font-bold text-gray-900">₹{(order.total_price ?? 0).toFixed(2)}</p>
                 </div>
               </div>
             </Link>
