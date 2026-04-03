@@ -38,9 +38,14 @@ export const fetchTrees = (filters = {}) => {
     if (filters.maintenance != null) params.maintenance = filters.maintenance;
     if (filters.sort_by) params.sort_by = filters.sort_by;
     if (filters.search) params.search = filters.search;
+    if (filters.state) params.state = filters.state;
+    if (filters.city) params.city = filters.city;
   }
   return api.get('/trees', { params }).then((r) => r.data);
 };
+
+export const fetchFilterOptions = () =>
+  api.get('/trees/filters').then((r) => r.data);
 
 export const fetchTree = (id) => api.get(`/trees/${id}`).then((r) => r.data);
 

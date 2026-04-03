@@ -55,6 +55,7 @@ function MapplsMapInner({
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(null);
   const [initializing, setInitializing] = useState(true);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -80,10 +81,10 @@ function MapplsMapInner({
 
     initTimerRef.current = setTimeout(() => {
       if (mountedRef.current && !loaded) {
-        setError('Map timed out. Your Mappls API token may be invalid or the network is unreachable.');
+        setError('Map timed out. Your Mappls API token may be invalid or expired. Regenerate it at mappls.com/api.');
         setInitializing(false);
       }
-    }, 12000);
+    }, 20000);
 
     try {
       sdk.initialize(MAPPLS_TOKEN, { map: true }, () => {
@@ -151,7 +152,7 @@ function MapplsMapInner({
         mapRef.current = null;
       }
     };
-  }, [mapId]);
+  }, [mapId, retryCount]);
 
   useEffect(() => {
     if (!loaded || !mapRef.current || !sdk) return;
@@ -199,10 +200,11 @@ function MapplsMapInner({
         return;
       }
 
-      if (validMarkers.length === 1 && center) {
-        try { mapRef.current.setCenter({ lat: Number(center[0]), lng: Number(center[1]) }); } catch { /* ok */ }
-        try { mapRef.current.setZoom(zoom || 14); } catch { /* ok */ }
-      } else if (validMarkers.length > 1 && !center) {
+      if (validMarkers.length === 1) {
+        const pt = { lat: Number(validMarkers[0].lat), lng: Number(validMarkers[0].lng) };
+        try { mapRef.current.setCenter(pt); } catch { /* ok */ }
+        try { mapRef.current.setZoom(13); } catch { /* ok */ }
+      } else if (validMarkers.length > 1) {
         try {
           const lats = validMarkers.map((mk) => Number(mk.lat));
           const lngs = validMarkers.map((mk) => Number(mk.lng));
@@ -222,12 +224,18 @@ function MapplsMapInner({
     return (
       <div
         style={{ width: '100%', height }}
-        className="flex flex-col items-center justify-center bg-red-50 border border-red-200 rounded-2xl text-sm text-red-600 gap-2 px-4"
+        className="flex flex-col items-center justify-center bg-red-50 border border-red-200 rounded-2xl text-sm text-red-600 gap-3 px-6"
       >
         <svg className="w-6 h-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
         </svg>
         <p className="text-center">{error}</p>
+        <button
+          onClick={() => setRetryCount((c) => c + 1)}
+          className="px-4 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 text-xs font-medium rounded-lg transition-colors"
+        >
+          Retry
+        </button>
       </div>
     );
   }

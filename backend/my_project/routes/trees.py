@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 import crud
 from auth_utils import require_user
 from database import get_db
-from models import User
+from models import Tree, User
 from schemas import TreeCreate, TreeDetailOut, TreeOut, TreeUpdate
 
 router = APIRouter(prefix="/api/trees", tags=["trees"])
@@ -41,6 +41,22 @@ def list_trees(
         skip=skip,
         limit=limit,
     )
+
+
+@router.get("/filters")
+def get_filter_options(db: Session = Depends(get_db)):
+    locations = (
+        db.query(Tree.city, Tree.state)
+        .distinct()
+        .filter(Tree.city.isnot(None), Tree.city != "", Tree.state.isnot(None), Tree.state != "")
+        .order_by(Tree.state, Tree.city)
+        .all()
+    )
+    types = db.query(Tree.type).distinct().filter(Tree.type.isnot(None)).all()
+    return {
+        "locations": [{"city": city, "state": state} for city, state in locations],
+        "types": sorted([t[0] for t in types]),
+    }
 
 
 @router.get("/{tree_id}", response_model=TreeDetailOut)
