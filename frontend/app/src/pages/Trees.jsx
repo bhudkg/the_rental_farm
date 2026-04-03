@@ -20,13 +20,9 @@ const CATEGORIES = [
   { type: 'chiku', label: 'Chiku', img: 'https://img.icons8.com/color/96/kiwi.png' },
 ];
 
-const PRICE_RANGES = [
-  { label: 'All', min: null, max: null },
-  { label: 'Under ₹30', min: null, max: 30 },
-  { label: '₹30 – ₹50', min: 30, max: 50 },
-  { label: '₹50 – ₹80', min: 50, max: 80 },
-  { label: '₹80+', min: 80, max: null },
-];
+const PRICE_MIN = 1000;
+const PRICE_MAX = 100000;
+const PRICE_STEP = 1000;
 
 const SIZES = ['All', 'Small', 'Medium', 'Large', 'Extra Large'];
 
@@ -50,23 +46,21 @@ export default function Trees() {
   const [filterOptions, setFilterOptions] = useState({ locations: [], types: [], varieties: [] });
 
   const activeType = searchParams.get('type') || null;
-  const [priceRange, setPriceRange] = useState(0);
+  const [priceMin, setPriceMin] = useState(PRICE_MIN);
+  const [priceMax, setPriceMax] = useState(PRICE_MAX);
   const [sizeFilter, setSizeFilter] = useState('All');
   const [sortBy, setSortBy] = useState('');
-  const [maintenance, setMaintenance] = useState(null);
   const [searchInput, setSearchInput] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [locationFilter, setLocationFilter] = useState('');
   const [page, setPage] = useState(1);
   const perPage = 12;
 
+  const priceChanged = priceMin !== PRICE_MIN || priceMax !== PRICE_MAX;
   const activeFilterCount =
-    (priceRange !== 0 ? 1 : 0) +
+    (priceChanged ? 1 : 0) +
     (sizeFilter !== 'All' ? 1 : 0) +
     (sortBy !== '' ? 1 : 0) +
-    (maintenance !== null ? 1 : 0) +
-    (searchInput !== '' ? 1 : 0) +
-    (locationFilter !== '' ? 1 : 0);
+    (searchInput !== '' ? 1 : 0);
 
   useEffect(() => {
     fetchFilterOptions().then(setFilterOptions);
@@ -82,24 +76,15 @@ export default function Trees() {
     setPage(1);
     const filters = {};
     if (activeType) filters.type = activeType;
-    const pr = PRICE_RANGES[priceRange];
-    if (pr.min != null) filters.price_min = pr.min;
-    if (pr.max != null) filters.price_max = pr.max;
+    if (priceMin > PRICE_MIN) filters.price_min = priceMin;
+    if (priceMax < PRICE_MAX) filters.price_max = priceMax;
     if (sizeFilter !== 'All') filters.size = sizeFilter;
     if (sortBy) filters.sort_by = sortBy;
-    if (maintenance !== null) filters.maintenance = maintenance;
     if (debouncedSearch.trim()) filters.search = debouncedSearch.trim();
-    if (locationFilter) {
-      try {
-        const loc = JSON.parse(locationFilter);
-        filters.city = loc.city;
-        filters.state = loc.state;
-      } catch { /* ignore */ }
-    }
     fetchTrees(filters)
       .then(setTrees)
       .finally(() => setLoading(false));
-  }, [activeType, priceRange, sizeFilter, sortBy, maintenance, debouncedSearch, locationFilter]);
+  }, [activeType, priceMin, priceMax, sizeFilter, sortBy, debouncedSearch]);
 
   const setType = (type) => {
     if (type === null) setSearchParams({});
@@ -107,13 +92,12 @@ export default function Trees() {
   };
 
   const clearFilters = () => {
-    setPriceRange(0);
+    setPriceMin(PRICE_MIN);
+    setPriceMax(PRICE_MAX);
     setSizeFilter('All');
     setSortBy('');
-    setMaintenance(null);
     setSearchInput('');
     setDebouncedSearch('');
-    setLocationFilter('');
   };
 
   const buildMarkers = () => {
@@ -189,43 +173,46 @@ export default function Trees() {
         </div>
       </div>
 
-      {/* Location */}
-      <div>
-        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Location</label>
-        <select
-          value={locationFilter}
-          onChange={(e) => setLocationFilter(e.target.value)}
-          className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
-        >
-          <option value="">All Locations</option>
-          {filterOptions.locations.map((loc) => {
-            const val = JSON.stringify({ city: loc.city, state: loc.state });
-            return (
-              <option key={val} value={val}>
-                {loc.city}, {loc.state}
-              </option>
-            );
-          })}
-        </select>
-      </div>
-
-      {/* Price */}
+      {/* Price Range */}
       <div>
         <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Price / Season</label>
-        <div className="flex flex-wrap gap-1.5">
-          {PRICE_RANGES.map((pr, i) => (
-            <button
-              key={i}
-              onClick={() => setPriceRange(i)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                priceRange === i
-                  ? 'bg-primary text-white shadow-sm'
-                  : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-300'
-              }`}
-            >
-              {pr.label}
-            </button>
-          ))}
+        <div className="flex items-center justify-between text-xs text-gray-700 font-medium mb-3">
+          <span>₹{priceMin.toLocaleString('en-IN')}</span>
+          <span>₹{priceMax.toLocaleString('en-IN')}</span>
+        </div>
+        <div className="relative h-6 flex items-center">
+          <div className="absolute w-full h-1 bg-gray-200 rounded-full" />
+          <div
+            className="absolute h-1 bg-primary rounded-full"
+            style={{
+              left: `${((priceMin - PRICE_MIN) / (PRICE_MAX - PRICE_MIN)) * 100}%`,
+              right: `${100 - ((priceMax - PRICE_MIN) / (PRICE_MAX - PRICE_MIN)) * 100}%`,
+            }}
+          />
+          <input
+            type="range"
+            min={PRICE_MIN}
+            max={PRICE_MAX}
+            step={PRICE_STEP}
+            value={priceMin}
+            onChange={(e) => {
+              const v = Number(e.target.value);
+              if (v <= priceMax - PRICE_STEP) setPriceMin(v);
+            }}
+            className="absolute w-full appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-primary [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:shadow-md [&::-moz-range-thumb]:cursor-pointer"
+          />
+          <input
+            type="range"
+            min={PRICE_MIN}
+            max={PRICE_MAX}
+            step={PRICE_STEP}
+            value={priceMax}
+            onChange={(e) => {
+              const v = Number(e.target.value);
+              if (v >= priceMin + PRICE_STEP) setPriceMax(v);
+            }}
+            className="absolute w-full appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-primary [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:shadow-md [&::-moz-range-thumb]:cursor-pointer"
+          />
         </div>
       </div>
 
@@ -244,30 +231,6 @@ export default function Trees() {
               }`}
             >
               {s}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Maintenance */}
-      <div>
-        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Maintenance</label>
-        <div className="flex flex-wrap gap-1.5">
-          {[
-            { val: null, label: 'Any' },
-            { val: false, label: 'Self-care' },
-            { val: true, label: 'We maintain' },
-          ].map((opt) => (
-            <button
-              key={String(opt.val)}
-              onClick={() => setMaintenance(opt.val)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                maintenance === opt.val
-                  ? 'bg-primary text-white shadow-sm'
-                  : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-300'
-              }`}
-            >
-              {opt.label}
             </button>
           ))}
         </div>
@@ -322,42 +285,47 @@ export default function Trees() {
             </h1>
             <p className="text-gray-400 text-sm mt-0.5">{trees.length} trees available for rent</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             {/* View toggle */}
-            <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
+            <div className="flex items-center bg-gray-100 rounded-xl p-1 gap-1">
               <button
                 onClick={() => setViewMode('list')}
-                className={`p-1.5 rounded-md transition-colors ${
-                  viewMode === 'list' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-400 hover:text-gray-600'
+                className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all ${
+                  viewMode === 'list'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
                 }`}
-                title="Grid view"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
                 </svg>
+                Grid
               </button>
               <button
                 onClick={() => setViewMode('map')}
-                className={`p-1.5 rounded-md transition-colors ${
-                  viewMode === 'map' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-400 hover:text-gray-600'
+                className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all ${
+                  viewMode === 'map'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
                 }`}
-                title="Map view"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m0 0l-3-3m3 3l3-3m6 1.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
                 </svg>
+                Map
               </button>
             </div>
+            <div className="hidden lg:block h-6 w-px bg-gray-200" />
             <div className="hidden lg:flex items-center gap-2">
-              <span className="text-xs text-gray-400">Sort:</span>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="px-2.5 py-1.5 bg-white border border-gray-200 rounded-lg text-xs text-gray-600 focus:ring-1 focus:ring-primary/20 focus:border-primary outline-none"
+                className="px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-700 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none cursor-pointer hover:border-gray-300 transition-colors appearance-none pr-8"
+                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' viewBox='0 0 24 24' stroke='%239ca3af' stroke-width='2.5'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19.5 8.25l-7.5 7.5-7.5-7.5'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center' }}
               >
                 {SORT_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  <option key={opt.value} value={opt.value}>Sort: {opt.label}</option>
                 ))}
               </select>
             </div>
