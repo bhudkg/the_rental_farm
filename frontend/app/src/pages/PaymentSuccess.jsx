@@ -5,22 +5,37 @@ import { fetchOrder } from '../services/api';
 export default function PaymentSuccess() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const orderId = searchParams.get('order_id');
-  
-  const [order, setOrder] = useState(null);
+
+  const singleOrderId = searchParams.get('order_id');
+  const batchOrderIds = searchParams.get('order_ids');
+
+  const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!orderId) {
+    let ids = [];
+    if (batchOrderIds) {
+      ids = batchOrderIds.split(',').filter(Boolean);
+    } else if (singleOrderId) {
+      ids = [singleOrderId];
+    }
+
+    if (ids.length === 0) {
       navigate('/orders');
       return;
     }
 
-    fetchOrder(orderId)
-      .then(setOrder)
-      .catch(() => navigate('/orders'))
+    Promise.all(ids.map((id) => fetchOrder(id).catch(() => null)))
+      .then((results) => {
+        const valid = results.filter(Boolean);
+        if (valid.length === 0) {
+          navigate('/orders');
+          return;
+        }
+        setOrders(valid);
+      })
       .finally(() => setLoading(false));
-  }, [orderId, navigate]);
+  }, [singleOrderId, batchOrderIds, navigate]);
 
   if (loading) {
     return (
@@ -33,12 +48,10 @@ export default function PaymentSuccess() {
     );
   }
 
-  if (!order) {
-    return null;
-  }
+  if (orders.length === 0) return null;
 
-  const DELIVERY_FEE = 1000;
-  const seasonPrice = order.tree?.price_per_season || 0;
+  const totalPaid = orders.reduce((sum, o) => sum + (o.total_price || 0), 0);
+  const isBatch = orders.length > 1;
 
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
@@ -50,84 +63,77 @@ export default function PaymentSuccess() {
           </svg>
         </div>
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Payment Successful!</h1>
-        <p className="text-gray-600">Your tree rental has been confirmed</p>
+        <p className="text-gray-600">
+          {isBatch
+            ? `Your rental for ${orders.length} trees has been confirmed`
+            : 'Your tree rental has been confirmed'}
+        </p>
       </div>
 
       {/* Order Details Card */}
       <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden mb-6">
-        {/* Tree Info */}
-        {order.tree && (
-          <div className="p-6 border-b border-gray-100">
+        {/* Tree items */}
+        {orders.map((order) => (
+          <div key={order.id} className="p-6 border-b border-gray-100 last:border-b-0">
             <div className="flex gap-4 items-center">
-              <img
-                src={order.tree.image_urls?.[0] || order.tree.image_url}
-                alt={order.tree.name}
-                className="w-20 h-20 rounded-xl object-cover border border-gray-100"
-              />
-              <div className="flex-1">
-                <h3 className="font-semibold text-gray-900 text-lg">{order.tree.name}</h3>
+              {order.tree && (
+                <img
+                  src={order.tree.image_urls?.[0] || order.tree.image_url}
+                  alt={order.tree?.name}
+                  className="w-16 h-16 rounded-xl object-cover border border-gray-100 shrink-0"
+                />
+              )}
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-gray-900">{order.tree?.name || 'Tree'}</h3>
                 <p className="text-sm text-gray-500 capitalize">
-                  {order.tree.type}
-                  {order.tree.variety && ` · ${order.tree.variety}`}
+                  {order.tree?.type}
+                  {order.tree?.variety && ` · ${order.tree.variety}`}
                 </p>
-                {order.tree.location && (
-                  <p className="text-xs text-gray-400 mt-1">
+                {order.tree?.location && (
+                  <p className="text-xs text-gray-400 mt-0.5">
                     {[order.tree.location, order.tree.city, order.tree.state].filter(Boolean).join(', ')}
                   </p>
                 )}
               </div>
+              <div className="text-right shrink-0">
+                <p className="text-sm font-bold text-gray-900">₹{order.total_price.toLocaleString('en-IN')}</p>
+                <p className="text-xs text-gray-400 font-mono">{order.id.slice(0, 8)}...</p>
+              </div>
             </div>
           </div>
-        )}
+        ))}
 
-        {/* Payment Details */}
-        <div className="p-6 space-y-3">
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-500">Order ID</span>
-            <span className="font-mono text-xs text-gray-600">{order.id}</span>
-          </div>
-          
+        {/* Payment summary */}
+        <div className="p-6 bg-gray-50 space-y-3">
           <div className="flex justify-between text-sm">
             <span className="text-gray-500">Payment Status</span>
             <span className="inline-flex items-center gap-1.5 text-green-700 font-medium">
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
               </svg>
-              {order.payment_status || 'Completed'}
+              Completed
             </span>
           </div>
 
-          {order.payment_method && (
+          {orders[0]?.payment_method && (
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Payment Method</span>
-              <span className="font-medium text-gray-700 capitalize">{order.payment_method}</span>
+              <span className="font-medium text-gray-700 capitalize">{orders[0].payment_method}</span>
             </div>
           )}
 
-          {order.payment_id && (
+          {orders[0]?.payment_id && (
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Transaction ID</span>
-              <span className="font-mono text-xs text-gray-600">{order.payment_id}</span>
+              <span className="font-mono text-xs text-gray-600">{orders[0].payment_id}</span>
             </div>
           )}
 
-          <hr className="border-gray-200 my-4" />
-
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Season Rate</span>
-            <span className="font-medium">₹{seasonPrice.toLocaleString('en-IN')}</span>
-          </div>
-
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Delivery Fee</span>
-            <span className="font-medium">₹{DELIVERY_FEE.toLocaleString('en-IN')}</span>
-          </div>
-
-          <hr className="border-gray-200 my-4" />
+          <hr className="border-gray-200" />
 
           <div className="flex justify-between">
             <span className="font-semibold text-gray-900">Total Paid</span>
-            <span className="font-bold text-primary text-lg">₹{order.total_price.toLocaleString('en-IN')}</span>
+            <span className="font-bold text-primary text-lg">₹{totalPaid.toLocaleString('en-IN')}</span>
           </div>
         </div>
       </div>
@@ -144,7 +150,7 @@ export default function PaymentSuccess() {
           to="/trees"
           className="flex-1 px-6 py-3 bg-linear-to-r from-primary to-emerald-600 text-white rounded-xl text-center font-semibold hover:brightness-105 transition-all shadow-lg shadow-primary/20"
         >
-          Rent Another Tree
+          Rent More Trees
         </Link>
       </div>
 

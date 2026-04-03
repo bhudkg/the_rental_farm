@@ -60,12 +60,17 @@ export const deleteTree = (id) => api.delete(`/trees/${id}`);
 
 export const createOrder = (data) => api.post('/orders', data).then((r) => r.data);
 
+export const createBatchOrder = (data) => api.post('/orders/batch', data).then((r) => r.data);
+
 export const fetchOrders = () => api.get('/orders').then((r) => r.data);
 
 export const fetchOrder = (id) => api.get(`/orders/${id}`).then((r) => r.data);
 
 export const verifyPayment = (orderId, paymentData) =>
   api.post(`/orders/${orderId}/payment/verify`, paymentData).then((r) => r.data);
+
+export const verifyBatchPayment = (data) =>
+  api.post('/orders/batch/verify', data).then((r) => r.data);
 
 export const getPaymentStatus = (orderId) =>
   api.get(`/orders/${orderId}/payment-status`).then((r) => r.data);

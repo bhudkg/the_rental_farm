@@ -5,7 +5,7 @@ import useStore from '../store/useStore';
 export default function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { token, user, logout } = useStore();
+  const { token, user, logout, getCartCount, setCartDrawerOpen } = useStore();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef(null);
@@ -107,6 +107,7 @@ export default function Navbar() {
               >
                 Register Tree
               </Link>
+              <CartButton count={getCartCount()} onClick={() => setCartDrawerOpen(true)} />
             </div>
 
             {token ? (
@@ -229,6 +230,22 @@ export default function Navbar() {
               Register Tree
             </Link>
           </div>
+          <button
+            onClick={() => { setMobileOpen(false); setCartDrawerOpen(true); }}
+            className="flex items-center gap-3 w-full px-4 py-2.5 rounded-lg text-sm font-medium mt-2 text-gray-600 hover:bg-gray-50"
+          >
+            <span className="relative text-gray-400">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
+              </svg>
+              {getCartCount() > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-primary text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                  {getCartCount()}
+                </span>
+              )}
+            </span>
+            Cart {getCartCount() > 0 && `(${getCartCount()})`}
+          </button>
           {token ? (
             <div className="mt-3 border-t border-gray-100 pt-3">
               <div className="flex items-center gap-3 px-4 py-2">
@@ -277,5 +294,24 @@ export default function Navbar() {
         </div>
       )}
     </nav>
+  );
+}
+
+function CartButton({ count, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className="relative p-2 rounded-lg text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+      aria-label="Open cart"
+    >
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
+      </svg>
+      {count > 0 && (
+        <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-primary text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
+          {count > 99 ? '99+' : count}
+        </span>
+      )}
+    </button>
   );
 }

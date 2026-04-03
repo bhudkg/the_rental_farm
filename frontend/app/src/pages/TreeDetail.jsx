@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import BookingModal from '../components/BookingModal';
 import MapplsMap from '../components/MapplsMap';
 import { fetchTree } from '../services/api';
+import useStore, { DELIVERY_FEE } from '../store/useStore';
 
 const PLACEHOLDER_IMG = 'https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=800&q=80';
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -13,8 +14,10 @@ export default function TreeDetail() {
   const [loading, setLoading] = useState(true);
   const [activeImg, setActiveImg] = useState(0);
   const [showAllPhotos, setShowAllPhotos] = useState(false);
-
   const [showModal, setShowModal] = useState(false);
+  const [justAdded, setJustAdded] = useState(false);
+
+  const { addToCart, isInCart, setCartDrawerOpen } = useStore();
 
   useEffect(() => {
     fetchTree(id)
@@ -22,9 +25,19 @@ export default function TreeDetail() {
       .finally(() => setLoading(false));
   }, [id]);
 
-  const DELIVERY_FEE = 1000;
   const seasonPrice = tree ? (Number(tree.price_per_season) || 0) : 0;
   const totalPrice = seasonPrice + DELIVERY_FEE;
+  const depositAmount = tree ? Number(tree.deposit || 0) : 0;
+  const grandTotal = totalPrice + depositAmount;
+
+  const alreadyInCart = tree ? isInCart(tree.id) : false;
+
+  const handleAddToCart = () => {
+    if (!tree) return;
+    addToCart(tree);
+    setJustAdded(true);
+    setTimeout(() => setJustAdded(false), 2000);
+  };
 
   if (loading) return <LoadingSkeleton />;
 
@@ -47,6 +60,17 @@ export default function TreeDetail() {
   const seasonText = tree.season_start && tree.season_end
     ? `${MONTHS[tree.season_start - 1]} – ${MONTHS[tree.season_end - 1]}`
     : null;
+
+  const specs = [
+    tree.size && { icon: 'size', label: 'Size', value: tree.size },
+    seasonText && { icon: 'season', label: 'Fruiting Season', value: seasonText },
+    tree.min_quantity > 0 && { icon: 'yield', label: 'Min Yield Guarantee', value: `${tree.min_quantity} kg/season` },
+    tree.age != null && { icon: 'age', label: 'Tree Age', value: `${tree.age} years` },
+    tree.previous_year_yield != null && { icon: 'harvest', label: 'Last Year Yield', value: `${tree.previous_year_yield} kg` },
+    { icon: 'maintenance', label: 'Maintenance', value: tree.maintenance_required ? 'Included' : 'Not included' },
+  ].filter(Boolean);
+
+  const availableCount = tree.available_quantity ?? 0;
 
   return (
     <>
@@ -78,8 +102,6 @@ export default function TreeDetail() {
                 onClick={() => setShowAllPhotos(true)}
                 onError={(e) => { e.target.src = PLACEHOLDER_IMG; }}
               />
-              
-              {/* Prev Button */}
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); setActiveImg((prev) => (prev - 1 + images.length) % images.length); }}
@@ -87,8 +109,6 @@ export default function TreeDetail() {
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
               </button>
-
-              {/* Next Button */}
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); setActiveImg((prev) => (prev + 1) % images.length); }}
@@ -96,8 +116,6 @@ export default function TreeDetail() {
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
               </button>
-
-              {/* Dots */}
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex gap-1.5">
                 {images.map((_, idx) => (
                   <button
@@ -111,20 +129,8 @@ export default function TreeDetail() {
             </div>
           ) : (
             <button type="button" onClick={() => setShowAllPhotos(true)} className="relative w-full h-[280px] sm:h-[400px] cursor-pointer overflow-hidden bg-gray-100">
-              {/* Full-width backdrop keeps the section visually rich even for portrait photos */}
-              <img
-                src={images[0]}
-                alt=""
-                aria-hidden="true"
-                className="absolute inset-0 w-full h-full object-cover blur-md scale-110 opacity-35"
-                onError={(e) => { e.target.src = PLACEHOLDER_IMG; }}
-              />
-              <img
-                src={images[0]}
-                alt={tree.name}
-                className="relative z-10 w-full h-full object-contain"
-                onError={(e) => { e.target.src = PLACEHOLDER_IMG; }}
-              />
+              <img src={images[0]} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover blur-md scale-110 opacity-35" onError={(e) => { e.target.src = PLACEHOLDER_IMG; }} />
+              <img src={images[0]} alt={tree.name} className="relative z-10 w-full h-full object-contain" onError={(e) => { e.target.src = PLACEHOLDER_IMG; }} />
             </button>
           )}
 
@@ -142,8 +148,24 @@ export default function TreeDetail() {
           )}
         </div>
 
+        {/* Thumbnail strip */}
+        {images.length > 1 && (
+          <div className="hidden sm:flex gap-2 mb-8 overflow-x-auto pb-1">
+            {images.map((url, idx) => (
+              <button
+                key={url}
+                type="button"
+                onClick={() => setActiveImg(idx)}
+                className={`shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${idx === activeImg ? 'border-primary ring-2 ring-primary/20' : 'border-transparent opacity-60 hover:opacity-90'}`}
+              >
+                <img src={url} alt="" className="w-full h-full object-cover" onError={(e) => { e.target.src = PLACEHOLDER_IMG; }} />
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* ── Two-column layout ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-10 lg:gap-12">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-10 lg:gap-12">
 
           {/* ─ Left: Info ─ */}
           <div>
@@ -152,6 +174,11 @@ export default function TreeDetail() {
               <div className="flex flex-wrap items-center gap-2 mb-2">
                 <span className="px-2.5 py-0.5 bg-primary/10 text-primary text-xs font-bold rounded-full capitalize">{tree.type}</span>
                 {tree.variety && <span className="text-sm text-gray-500">{tree.variety}</span>}
+                {availableCount > 0 && (
+                  <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-xs font-medium rounded-full">
+                    {availableCount} available
+                  </span>
+                )}
               </div>
               <h1 className="text-2xl sm:text-[28px] font-bold text-gray-900 leading-tight mb-1.5">{tree.name}</h1>
               {locationParts.length > 0 && (
@@ -167,28 +194,25 @@ export default function TreeDetail() {
 
             <hr className="border-gray-100 mb-6" />
 
-            {/* Key details — only real data */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-5 mb-6">
-              {tree.size && (
-                <DetailItem label="Size" value={tree.size} />
-              )}
-              {seasonText && (
-                <DetailItem label="Fruiting Season" value={seasonText} />
-              )}
-              {tree.min_quantity > 0 && (
-                <DetailItem label="Min Yield Guarantee" value={`${tree.min_quantity} kg/season`} />
-              )}
-              <DetailItem label="Available" value={`${tree.available_quantity} trees`} />
-              {tree.deposit > 0 && (
-                <DetailItem label="Refundable Deposit" value={`₹${Number(tree.deposit).toLocaleString('en-IN')}`} />
-              )}
-              <DetailItem
-                label="Maintenance"
-                value={tree.maintenance_required ? 'Included' : 'Not included'}
-              />
-            </div>
-
-            <hr className="border-gray-100 mb-6" />
+            {/* Key specs */}
+            {specs.length > 0 && (
+              <>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
+                  {specs.map((s) => (
+                    <div key={s.label} className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
+                      <div className="w-9 h-9 rounded-lg bg-white border border-gray-100 flex items-center justify-center shrink-0">
+                        <SpecIcon type={s.icon} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[11px] text-gray-400 font-medium mb-0.5">{s.label}</p>
+                        <p className="text-sm font-semibold text-gray-800 truncate">{s.value}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <hr className="border-gray-100 mb-6" />
+              </>
+            )}
 
             {/* Description */}
             {tree.description && (
@@ -204,7 +228,7 @@ export default function TreeDetail() {
             {/* Owner info */}
             {tree.owner && (
               <>
-                <div className="flex items-center gap-4 mb-6">
+                <div className="flex items-center gap-4 p-4 rounded-xl bg-gray-50 border border-gray-100 mb-6">
                   <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                     <span className="text-lg font-bold text-primary">
                       {tree.owner.name?.charAt(0)?.toUpperCase() || '?'}
@@ -220,36 +244,6 @@ export default function TreeDetail() {
                 <hr className="border-gray-100 mb-6" />
               </>
             )}
-
-            {/* Pricing breakdown */}
-            <div className="mb-6">
-              <h2 className="text-base font-semibold text-gray-900 mb-3">Pricing</h2>
-              <div className="bg-gray-50 rounded-xl p-4 space-y-2.5 text-sm">
-                <div className="flex justify-between text-gray-600">
-                  <span>Season rate</span>
-                  <span className="font-medium text-gray-800">
-                    ₹{seasonPrice > 0 ? seasonPrice.toLocaleString('en-IN') : '—'}
-                  </span>
-                </div>
-                <div className="flex justify-between text-gray-600">
-                  <span>Delivery fee</span>
-                  <span className="font-medium text-gray-800">₹{DELIVERY_FEE.toLocaleString('en-IN')}</span>
-                </div>
-                {tree.deposit > 0 && (
-                  <div className="flex justify-between text-gray-600">
-                    <span>Refundable deposit</span>
-                    <span className="font-medium text-gray-800">₹{Number(tree.deposit).toLocaleString('en-IN')}</span>
-                  </div>
-                )}
-                <hr className="border-gray-200" />
-                <div className="flex justify-between">
-                  <span className="font-semibold text-gray-900">Total per season</span>
-                  <span className="font-bold text-gray-900">₹{totalPrice.toLocaleString('en-IN')}</span>
-                </div>
-              </div>
-            </div>
-
-            <hr className="border-gray-100 mb-6" />
 
             {/* Location & Map */}
             <div>
@@ -285,7 +279,7 @@ export default function TreeDetail() {
           <div className="lg:self-start">
             <div className="lg:sticky lg:top-6">
               <div className="border border-gray-200 rounded-2xl shadow-lg shadow-black/5 bg-white">
-                {/* Price */}
+                {/* Price header */}
                 <div className="px-6 pt-6 pb-4">
                   <div className="flex items-baseline gap-1.5">
                     <span className="text-2xl font-bold text-gray-900">
@@ -295,39 +289,68 @@ export default function TreeDetail() {
                   </div>
                 </div>
 
-                {/* CTA */}
-                <div className="px-6 pb-3">
-                  <button
-                    onClick={() => setShowModal(true)}
-                    className="w-full py-3.5 bg-linear-to-r from-primary to-emerald-600 text-white text-base font-bold rounded-xl hover:brightness-105 transition-all shadow-md"
-                  >
-                    Own This Tree
-                  </button>
-                </div>
-
                 {/* Price breakdown */}
-                <div className="px-6 pb-6 pt-2">
+                <div className="px-6 pb-5">
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between text-gray-500">
                       <span className="underline decoration-dotted underline-offset-2">Season rate</span>
-                      <span className="text-gray-700">₹{seasonPrice > 0 ? seasonPrice.toLocaleString('en-IN') : '—'}</span>
+                      <span className="text-gray-700">₹{seasonPrice.toLocaleString('en-IN')}</span>
                     </div>
                     <div className="flex justify-between text-gray-500">
                       <span className="underline decoration-dotted underline-offset-2">Delivery fee</span>
                       <span className="text-gray-700">₹{DELIVERY_FEE.toLocaleString('en-IN')}</span>
                     </div>
-                    {tree.deposit > 0 && (
+                    {depositAmount > 0 && (
                       <div className="flex justify-between text-gray-500">
                         <span className="underline decoration-dotted underline-offset-2">Refundable deposit</span>
-                        <span className="text-gray-700">₹{Number(tree.deposit).toLocaleString('en-IN')}</span>
+                        <span className="text-gray-700">₹{depositAmount.toLocaleString('en-IN')}</span>
                       </div>
                     )}
-                    <hr className="border-gray-200 my-3!" />
+                    <hr className="border-gray-200 my-1!" />
                     <div className="flex justify-between font-semibold text-gray-900">
                       <span>Total</span>
-                      <span>₹{(totalPrice + Number(tree.deposit || 0)).toLocaleString('en-IN')}</span>
+                      <span>₹{grandTotal.toLocaleString('en-IN')}</span>
                     </div>
                   </div>
+                </div>
+
+                {/* CTA buttons */}
+                <div className="px-6 pb-6 space-y-2.5">
+                  {alreadyInCart ? (
+                    <button
+                      onClick={() => setCartDrawerOpen(true)}
+                      className="w-full py-3.5 bg-emerald-50 text-emerald-700 text-base font-bold rounded-xl text-center flex items-center justify-center gap-2"
+                    >
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                      </svg>
+                      In Cart &mdash; View Cart
+                    </button>
+                  ) : justAdded ? (
+                    <div className="w-full py-3.5 bg-emerald-50 text-emerald-700 text-base font-bold rounded-xl text-center flex items-center justify-center gap-2">
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                      </svg>
+                      Added to Cart
+                    </div>
+                  ) : (
+                    <button
+                      onClick={handleAddToCart}
+                      className="w-full py-3.5 bg-linear-to-r from-primary to-emerald-600 text-white text-base font-bold rounded-xl hover:brightness-105 transition-all shadow-md flex items-center justify-center gap-2"
+                    >
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
+                      </svg>
+                      Add to Cart
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => setShowModal(true)}
+                    className="w-full py-3 border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all"
+                  >
+                    Buy Now
+                  </button>
                 </div>
               </div>
             </div>
@@ -346,12 +369,12 @@ export default function TreeDetail() {
         />
       )}
 
-      {/* Booking modal */}
+      {/* Single-tree booking modal (Buy Now) */}
       {showModal && (
         <BookingModal
           tree={tree}
           totalPrice={totalPrice}
-          deposit={tree.deposit}
+          deposit={depositAmount}
           onClose={() => setShowModal(false)}
         />
       )}
@@ -369,13 +392,48 @@ function ChevronRight() {
   );
 }
 
-function DetailItem({ label, value }) {
-  return (
-    <div>
-      <p className="text-xs text-gray-400 mb-0.5">{label}</p>
-      <p className="text-sm font-semibold text-gray-800">{value}</p>
-    </div>
-  );
+function SpecIcon({ type }) {
+  const cls = 'w-4 h-4';
+  switch (type) {
+    case 'size':
+      return (
+        <svg className={`${cls} text-violet-500`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+        </svg>
+      );
+    case 'season':
+      return (
+        <svg className={`${cls} text-orange-500`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-2.25l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+        </svg>
+      );
+    case 'yield':
+      return (
+        <svg className={`${cls} text-emerald-500`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v17.25m0 0c-1.472 0-2.882.265-4.185.75M12 20.25c1.472 0 2.882.265 4.185.75M18.75 4.97A48.416 48.416 0 0012 4.5c-2.291 0-4.545.16-6.75.47m13.5 0c1.01.143 2.01.317 3 .52m-3-.52l2.62 10.726c.122.499-.106 1.028-.589 1.202a5.988 5.988 0 01-2.031.352 5.988 5.988 0 01-2.031-.352c-.483-.174-.711-.703-.59-1.202L18.75 4.971zm-16.5.52c.99-.203 1.99-.377 3-.52m0 0l2.62 10.726c.122.499-.106 1.028-.589 1.202a5.989 5.989 0 01-2.031.352 5.989 5.989 0 01-2.031-.352c-.483-.174-.711-.703-.59-1.202L5.25 4.971z" />
+        </svg>
+      );
+    case 'age':
+      return (
+        <svg className={`${cls} text-blue-500`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+        </svg>
+      );
+    case 'harvest':
+      return (
+        <svg className={`${cls} text-amber-500`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+        </svg>
+      );
+    case 'maintenance':
+      return (
+        <svg className={`${cls} text-teal-500`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17l-5.384 5.384a2.025 2.025 0 01-2.853-2.853l5.384-5.384m0 0L15.17 11.42m-3.75 3.75L15.17 11.42m0 0l5.384-5.384a2.025 2.025 0 00-2.853-2.853L12.317 8.567" />
+        </svg>
+      );
+    default:
+      return null;
+  }
 }
 
 function PhotoViewer({ images, treeName, activeImg, setActiveImg, onClose }) {
@@ -432,24 +490,20 @@ function LoadingSkeleton() {
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-pulse">
       <div className="h-4 bg-gray-100 rounded w-48 mb-5" />
-      <div className="grid grid-cols-4 grid-rows-2 gap-1.5 rounded-2xl overflow-hidden h-[340px] mb-8">
-        <div className="col-span-2 row-span-2 bg-gray-100" />
-        <div className="bg-gray-100" /><div className="bg-gray-100" />
-        <div className="bg-gray-100" /><div className="bg-gray-100" />
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-12">
+      <div className="rounded-2xl overflow-hidden h-[340px] bg-gray-100 mb-8" />
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-12">
         <div className="space-y-5">
           <div className="h-6 bg-gray-100 rounded w-40" />
           <div className="h-8 bg-gray-100 rounded w-72" />
           <div className="h-4 bg-gray-100 rounded w-56" />
           <div className="h-px bg-gray-100 w-full" />
-          <div className="grid grid-cols-3 gap-6">
-            {[...Array(6)].map((_, i) => <div key={i} className="h-10 bg-gray-100 rounded" />)}
+          <div className="grid grid-cols-3 gap-4">
+            {[...Array(6)].map((_, i) => <div key={i} className="h-16 bg-gray-100 rounded-xl" />)}
           </div>
           <div className="h-px bg-gray-100 w-full" />
           <div className="h-24 bg-gray-100 rounded-xl" />
         </div>
-        <div className="h-72 bg-gray-100 rounded-2xl" />
+        <div className="h-80 bg-gray-100 rounded-2xl" />
       </div>
     </div>
   );

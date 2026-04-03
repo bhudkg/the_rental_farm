@@ -111,6 +111,21 @@ class OrderCreate(BaseModel):
     tree_id: uuid.UUID
 
 
+class BatchOrderItem(BaseModel):
+    tree_id: uuid.UUID
+
+
+class BatchOrderCreate(BaseModel):
+    items: list[BatchOrderItem]
+
+
+class BatchPaymentVerifyRequest(BaseModel):
+    order_ids: list[uuid.UUID]
+    payment_id: str
+    order_id: str
+    signature: str
+
+
 class OrderOut(BaseModel):
     id: uuid.UUID
     user_id: uuid.UUID

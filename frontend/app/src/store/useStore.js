@@ -11,13 +11,63 @@ function safeGetUser() {
   }
 }
 
-const useStore = create((set) => ({
+function safeGetCart() {
+  try {
+    const raw = localStorage.getItem('cart');
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    localStorage.removeItem('cart');
+    return [];
+  }
+}
+
+function persistCart(cart) {
+  localStorage.setItem('cart', JSON.stringify(cart));
+}
+
+const DELIVERY_FEE = 1000;
+
+const useStore = create((set, get) => ({
   user: safeGetUser(),
   token: localStorage.getItem('token') || null,
 
-  selectedTree: null,
-  bookingPrice: null,
+  // ── Cart ──
+  cart: safeGetCart(),
+  cartDrawerOpen: false,
 
+  addToCart: (tree) => {
+    const cart = [...get().cart];
+    if (cart.some((item) => item.tree.id === tree.id)) return;
+    cart.push({ tree });
+    persistCart(cart);
+    set({ cart });
+  },
+
+  removeFromCart: (treeId) => {
+    const cart = get().cart.filter((item) => item.tree.id !== treeId);
+    persistCart(cart);
+    set({ cart });
+  },
+
+  clearCart: () => {
+    localStorage.removeItem('cart');
+    set({ cart: [] });
+  },
+
+  getCartCount: () => get().cart.length,
+
+  getCartTotal: () =>
+    get().cart.reduce(
+      (sum, item) =>
+        sum + (Number(item.tree.price_per_season) || 0) + DELIVERY_FEE,
+      0,
+    ),
+
+  setCartDrawerOpen: (open) => set({ cartDrawerOpen: open }),
+
+  isInCart: (treeId) => get().cart.some((item) => item.tree.id === treeId),
+
+  // ── Auth ──
   setUser: (user) => {
     if (user) {
       localStorage.setItem('user', JSON.stringify(user));
@@ -47,12 +97,7 @@ const useStore = create((set) => ({
     localStorage.removeItem('user');
     set({ user: null, token: null });
   },
-
-  setSelectedTree: (tree) => set({ selectedTree: tree }),
-  setBookingPrice: (p) => set({ bookingPrice: p }),
-
-  resetBooking: () =>
-    set({ selectedTree: null, bookingPrice: null }),
 }));
 
 export default useStore;
+export { DELIVERY_FEE };

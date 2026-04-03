@@ -9,7 +9,15 @@ import payment_service
 from auth_utils import get_current_user
 from database import get_db
 from models import User
-from schemas import OrderCreate, OrderOut, PaymentDetailsOut, PaymentVerifyRequest, PaymentStatusOut
+from schemas import (
+    BatchOrderCreate,
+    BatchPaymentVerifyRequest,
+    OrderCreate,
+    OrderOut,
+    PaymentDetailsOut,
+    PaymentVerifyRequest,
+    PaymentStatusOut,
+)
 
 router = APIRouter(prefix="/api/orders", tags=["orders"])
 
@@ -59,6 +67,117 @@ def create_order(
             "order": OrderOut.model_validate(order),
             "payment": PaymentDetailsOut(**payment_details),
         }
+    except payment_service.PaymentServiceError as e:
+        raise HTTPException(status_code=500, detail=f"Payment service error: {str(e)}")
+
+
+@router.post("/batch", status_code=status.HTTP_201_CREATED)
+def create_batch_orders(
+    body: BatchOrderCreate,
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_current_user),
+):
+    if not body.items:
+        raise HTTPException(status_code=400, detail="Cart is empty")
+
+    user_id = current_user.id if current_user else _get_or_create_guest(db)
+
+    orders = []
+    total_amount = 0.0
+
+    for item in body.items:
+        tree = crud.get_tree(db, item.tree_id)
+        if not tree:
+            raise HTTPException(status_code=404, detail=f"Tree {item.tree_id} not found")
+
+        item_price = (tree.price_per_season or 0) + 1000
+        total_amount += item_price
+
+        order = crud.create_order(db, {
+            "user_id": user_id,
+            "tree_id": item.tree_id,
+            "total_price": item_price,
+            "status": "pending",
+            "payment_status": "pending",
+        })
+        db.refresh(order, ["tree"])
+        orders.append(order)
+
+    user_info = None
+    if current_user:
+        user_info = {"name": current_user.name, "email": current_user.email}
+
+    try:
+        batch_id = orders[0].id
+        payment_details = payment_service.create_payment_order(
+            order_id=batch_id,
+            amount=total_amount,
+            user_info=user_info,
+        )
+
+        gateway = payment_details["gateway"]
+        for order in orders:
+            order.payment_gateway = gateway
+        db.commit()
+        for order in orders:
+            db.refresh(order)
+
+        return {
+            "orders": [OrderOut.model_validate(o) for o in orders],
+            "payment": PaymentDetailsOut(**payment_details),
+        }
+    except payment_service.PaymentServiceError as e:
+        raise HTTPException(status_code=500, detail=f"Payment service error: {str(e)}")
+
+
+@router.post("/batch/verify")
+def verify_batch_payment(
+    body: BatchPaymentVerifyRequest,
+    db: Session = Depends(get_db),
+):
+    if not body.order_ids:
+        raise HTTPException(status_code=400, detail="No order IDs provided")
+
+    first_order = crud.get_order(db, body.order_ids[0])
+    if not first_order:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    if first_order.payment_status == "completed":
+        raise HTTPException(status_code=400, detail="Payment already completed")
+
+    try:
+        if first_order.payment_gateway == "razorpay":
+            payment_service.verify_razorpay_payment(
+                payment_id=body.payment_id,
+                order_id=body.order_id,
+                signature=body.signature,
+            )
+            payment_details = payment_service.get_razorpay_payment(body.payment_id)
+
+            for oid in body.order_ids:
+                order = crud.get_order(db, oid)
+                if order:
+                    order.payment_id = body.payment_id
+                    order.payment_status = "completed"
+                    order.payment_method = payment_details.get("method")
+                    order.payment_captured_at = datetime.utcnow()
+                    order.status = "confirmed"
+        else:
+            raise HTTPException(status_code=400, detail="Unknown payment gateway")
+
+        db.commit()
+
+        result_orders = []
+        for oid in body.order_ids:
+            order = crud.get_order(db, oid)
+            if order:
+                db.refresh(order, ["tree"])
+                result_orders.append(OrderOut.model_validate(order))
+
+        return {"orders": result_orders}
+
+    except payment_service.PaymentVerificationFailed as e:
+        raise HTTPException(status_code=400, detail=f"Payment verification failed: {str(e)}")
     except payment_service.PaymentServiceError as e:
         raise HTTPException(status_code=500, detail=f"Payment service error: {str(e)}")
 

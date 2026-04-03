@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import CartDrawer from './components/CartDrawer';
 import RequireOwner from './components/RequireOwner';
 import Home from './pages/Home';
 import SearchResults from './pages/SearchResults';
@@ -58,6 +59,7 @@ export default function App() {
           </Routes>
         </main>
         <Footer />
+        <CartDrawer />
       </div>
     </BrowserRouter>
   );
