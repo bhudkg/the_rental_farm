@@ -42,6 +42,7 @@ export default function Trees() {
   const [trees, setTrees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState('list');
+  const [cardVariant, setCardVariant] = useState('B');
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [filterOptions, setFilterOptions] = useState({ locations: [], types: [], varieties: [] });
 
@@ -318,6 +319,21 @@ export default function Trees() {
             </div>
             <div className="hidden lg:block h-6 w-px bg-gray-200" />
             <div className="hidden lg:flex items-center gap-2">
+              <div className="flex items-center bg-gray-100 rounded-lg p-0.5 gap-0.5">
+                {['A', 'B', 'C'].map((v) => (
+                  <button
+                    key={v}
+                    onClick={() => setCardVariant(v)}
+                    className={`px-2.5 py-1.5 rounded-md text-[11px] font-semibold transition-all ${
+                      cardVariant === v
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    {v}
+                  </button>
+                ))}
+              </div>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
@@ -409,9 +425,9 @@ export default function Trees() {
               />
             ) : (
               <>
-                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className={`grid gap-4 ${cardVariant === 'A' ? 'grid-cols-2 sm:grid-cols-2 lg:grid-cols-4' : 'grid-cols-2 sm:grid-cols-2 lg:grid-cols-3'}`}>
                   {paginatedTrees.map((tree) => (
-                    <TreeCard key={tree.id} tree={tree} />
+                    <TreeCard key={tree.id} tree={tree} variant={cardVariant} />
                   ))}
                 </div>
 
