@@ -40,6 +40,7 @@ export const fetchTrees = (filters = {}) => {
     if (filters.search) params.search = filters.search;
     if (filters.state) params.state = filters.state;
     if (filters.city) params.city = filters.city;
+    if (filters.variety) params.variety = filters.variety;
   }
   return api.get('/trees', { params }).then((r) => r.data);
 };

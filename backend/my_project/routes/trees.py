@@ -15,6 +15,7 @@ router = APIRouter(prefix="/api/trees", tags=["trees"])
 @router.get("", response_model=list[TreeOut])
 def list_trees(
     type: str | None = Query(None, description="Filter by tree type"),
+    variety: str | None = Query(None, description="Filter by variety"),
     price_min: float | None = Query(None, description="Min price per day"),
     price_max: float | None = Query(None, description="Max price per day"),
     size: str | None = Query(None, description="Filter by size keyword"),
@@ -30,6 +31,7 @@ def list_trees(
     return crud.get_trees(
         db,
         tree_type=type,
+        variety=variety,
         price_min=price_min,
         price_max=price_max,
         size=size,
@@ -53,9 +55,17 @@ def get_filter_options(db: Session = Depends(get_db)):
         .all()
     )
     types = db.query(Tree.type).distinct().filter(Tree.type.isnot(None)).all()
+    varieties = (
+        db.query(Tree.variety)
+        .distinct()
+        .filter(Tree.variety.isnot(None), Tree.variety != "")
+        .order_by(Tree.variety)
+        .all()
+    )
     return {
         "locations": [{"city": city, "state": state} for city, state in locations],
         "types": sorted([t[0] for t in types]),
+        "varieties": sorted([v[0] for v in varieties]),
     }
 
 

@@ -10,6 +10,7 @@ from models import Order, Tree, User
 def get_trees(
     db: Session,
     tree_type: str | None = None,
+    variety: str | None = None,
     price_min: float | None = None,
     price_max: float | None = None,
     size: str | None = None,
@@ -24,6 +25,8 @@ def get_trees(
     q = db.query(Tree)
     if tree_type:
         q = q.filter(Tree.type == tree_type)
+    if variety:
+        q = q.filter(Tree.variety.ilike(f"%{variety}%"))
     if price_min is not None:
         q = q.filter(Tree.price_per_season >= price_min)
     if price_max is not None:
@@ -31,7 +34,9 @@ def get_trees(
     if size:
         q = q.filter(Tree.size.ilike(f"%{size}%"))
     if search:
-        q = q.filter(Tree.name.ilike(f"%{search}%"))
+        q = q.filter(
+            Tree.name.ilike(f"%{search}%") | Tree.variety.ilike(f"%{search}%")
+        )
     if state:
         q = q.filter(Tree.state == state)
     if city:
