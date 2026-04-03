@@ -4,6 +4,7 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import RequireOwner from './components/RequireOwner';
 import Home from './pages/Home';
+import SearchResults from './pages/SearchResults';
 import Trees from './pages/Trees';
 import TreeDetail from './pages/TreeDetail';
 import Orders from './pages/Orders';
@@ -40,6 +41,7 @@ export default function App() {
         <main className="flex-1">
           <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/search" element={<SearchResults />} />
             <Route path="/trees" element={<Trees />} />
             <Route path="/trees/:id" element={<TreeDetail />} />
             <Route path="/orders" element={<Orders />} />
