@@ -492,22 +492,56 @@ export default function Home() {
               <MapplsMap
                 height="100%"
                 mapId="home-map"
-                markers={trees
-                  .filter((t) => t.latitude && t.longitude)
-                  .map((t) => ({
-                    id: t.id,
-                    lat: t.latitude,
-                    lng: t.longitude,
-                    name: t.name,
-                    popupHtml: `
-                      <div style="padding:8px;min-width:180px;font-family:system-ui,sans-serif;">
-                        <strong style="font-size:14px;display:block;margin-bottom:4px;">${t.name}</strong>
-                        <span style="font-size:12px;color:#666;">${t.type}${t.variety ? ' &middot; ' + t.variety : ''}</span><br/>
-                        <span style="font-size:12px;color:#666;">${[t.city, t.state].filter(Boolean).join(', ')}</span><br/>
-                        <span style="font-size:14px;font-weight:600;color:#16a34a;">&#8377;${t.price_per_season != null ? Number(t.price_per_season).toLocaleString('en-IN') : '—'}/season</span><br/>
-                        <a href="/trees/${t.id}" style="display:inline-block;margin-top:6px;font-size:12px;color:#2563eb;text-decoration:underline;">View Details &rarr;</a>
-                      </div>`,
-                  }))}
+                markers={(() => {
+                  const cityCoords = {};
+                  trees.forEach((t) => {
+                    if (t.latitude && t.longitude) {
+                      const key = `${t.city}|${t.state}`.toLowerCase();
+                      if (!cityCoords[key]) cityCoords[key] = { lat: Number(t.latitude), lng: Number(t.longitude) };
+                    }
+                  });
+
+                  const placed = [];
+                  return trees.map((t, i) => {
+                    let lat = t.latitude ? Number(t.latitude) : null;
+                    let lng = t.longitude ? Number(t.longitude) : null;
+
+                    if (lat == null || lng == null) {
+                      const key = `${t.city}|${t.state}`.toLowerCase();
+                      const fallback = cityCoords[key];
+                      if (!fallback) return null;
+                      lat = fallback.lat;
+                      lng = fallback.lng;
+                    }
+
+                    const tooClose = placed.some((p) => Math.abs(p.lat - lat) < 0.0001 && Math.abs(p.lng - lng) < 0.0001);
+                    if (tooClose) {
+                      const angle = (placed.length * 137.5 * Math.PI) / 180;
+                      const offset = 0.0001 * (placed.length + 1);
+                      lat += offset * Math.cos(angle);
+                      lng += offset * Math.sin(angle);
+                    }
+                    placed.push({ lat, lng });
+
+                    const cat = CATEGORIES.find((c) => c.type === t.type);
+                    return {
+                      id: t.id,
+                      lat,
+                      lng,
+                      name: t.name,
+                      label: t.name,
+                      icon: cat?.img,
+                      popupHtml: `
+                        <div style="padding:8px;min-width:180px;font-family:system-ui,sans-serif;">
+                          <strong style="font-size:14px;display:block;margin-bottom:4px;">${t.name}</strong>
+                          <span style="font-size:12px;color:#666;">${t.type}${t.variety ? ' &middot; ' + t.variety : ''}</span><br/>
+                          <span style="font-size:12px;color:#666;">${[t.city, t.state].filter(Boolean).join(', ')}</span><br/>
+                          <span style="font-size:14px;font-weight:600;color:#16a34a;">&#8377;${t.price_per_season != null ? Number(t.price_per_season).toLocaleString('en-IN') : '—'}/season</span><br/>
+                          <a href="/trees/${t.id}" style="display:inline-block;margin-top:6px;font-size:12px;color:#2563eb;text-decoration:underline;">View Details &rarr;</a>
+                        </div>`,
+                    };
+                  }).filter(Boolean);
+                })()}
                 onMarkerClick={(m) => navigate(`/trees/${m.id}`)}
               />
             </div>

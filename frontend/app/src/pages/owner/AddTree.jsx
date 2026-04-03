@@ -122,6 +122,8 @@ export default function AddTree() {
     season_start: '',
     season_end: '',
     size: 'Medium (3-4 ft)',
+    age: '',
+    previous_year_yield: '',
     image_urls: [],
   });
 
@@ -177,6 +179,8 @@ export default function AddTree() {
         season_start: form.season_start ? parseInt(form.season_start, 10) : null,
         season_end: form.season_end ? parseInt(form.season_end, 10) : null,
         size: form.size,
+        age: form.age ? parseInt(form.age, 10) : null,
+        previous_year_yield: form.previous_year_yield ? parseFloat(form.previous_year_yield) : null,
         image_urls: form.image_urls,
         image_url: form.image_urls[0] || null,
       };
@@ -441,6 +445,32 @@ export default function AddTree() {
           title="Additional Details"
           completed={completedSteps.details}
         >
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className={labelClass}>Age of Tree (years)</label>
+              <input
+                type="number"
+                min="0"
+                value={form.age}
+                onChange={update('age')}
+                placeholder="e.g. 12"
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Previous Year Yield (kg)</label>
+              <input
+                type="number"
+                min="0"
+                step="0.1"
+                value={form.previous_year_yield}
+                onChange={update('previous_year_yield')}
+                placeholder="e.g. 120"
+                className={inputClass}
+              />
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className={labelClass}>Min Yield Guarantee (kg/season)</label>

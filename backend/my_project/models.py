@@ -47,6 +47,8 @@ class Tree(Base):
     min_quantity: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     season_start: Mapped[int | None] = mapped_column(Integer, nullable=True)
     season_end: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    age: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    previous_year_yield: Mapped[float | None] = mapped_column(Float, nullable=True)
     image_url: Mapped[str] = mapped_column(String(500), nullable=True)
     image_urls: Mapped[list[str] | None] = mapped_column(ARRAY(String(500)), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

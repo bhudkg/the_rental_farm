@@ -174,11 +174,13 @@ function MapplsMapInner({
         if (Number.isNaN(lat) || Number.isNaN(lng)) return;
 
         try {
+          const label = m.label || m.name || 'Tree';
           const markerOpts = {
             map: mapRef.current,
             position: { lat, lng },
+            html: '<table style="border-collapse:collapse;cursor:pointer;"><tr><td style="background:#fff;border-radius:20px;padding:6px 14px 6px 10px;font-size:12px;font-weight:600;color:#15803d;white-space:nowrap;box-shadow:0 2px 10px rgba(0,0,0,0.18);font-family:system-ui,sans-serif;">' + (m.icon ? '<img src="' + m.icon + '" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;" alt=""/>' : '<span style="font-size:14px;vertical-align:middle;margin-right:5px;">🌳</span>') + '<span style="vertical-align:middle;">' + label + '</span></td></tr><tr><td style="text-align:center;"><div style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:6px solid #fff;margin:0 auto;filter:drop-shadow(0 1px 1px rgba(0,0,0,0.1));"></div></td></tr></table>',
             popupHtml: m.popupHtml || `<div style="padding:4px;font-size:13px;"><strong>${m.name || 'Tree'}</strong></div>`,
-            popupOptions: { openPopup: validMarkers.length === 1, autoClose: true, maxWidth: 250 },
+            popupOptions: { openPopup: false, autoClose: true, maxWidth: 250 },
           };
 
           const marker = typeof sdk.Marker === 'function'
@@ -200,19 +202,21 @@ function MapplsMapInner({
         return;
       }
 
+      const lats = validMarkers.map((mk) => Number(mk.lat));
+      const lngs = validMarkers.map((mk) => Number(mk.lng));
+      const avgLat = lats.reduce((a, b) => a + b, 0) / lats.length;
+      const avgLng = lngs.reduce((a, b) => a + b, 0) / lngs.length;
+
+      try { mapRef.current.setCenter({ lat: avgLat, lng: avgLng }); } catch { /* ok */ }
+
       if (validMarkers.length === 1) {
-        const pt = { lat: Number(validMarkers[0].lat), lng: Number(validMarkers[0].lng) };
-        try { mapRef.current.setCenter(pt); } catch { /* ok */ }
         try { mapRef.current.setZoom(13); } catch { /* ok */ }
-      } else if (validMarkers.length > 1) {
-        try {
-          const lats = validMarkers.map((mk) => Number(mk.lat));
-          const lngs = validMarkers.map((mk) => Number(mk.lng));
-          mapRef.current.fitBounds(
-            [[Math.min(...lats), Math.min(...lngs)], [Math.max(...lats), Math.max(...lngs)]],
-            { padding: 60, maxZoom: 14 },
-          );
-        } catch { /* fitBounds not always available */ }
+      } else {
+        const latSpread = Math.max(...lats) - Math.min(...lats);
+        const lngSpread = Math.max(...lngs) - Math.min(...lngs);
+        const spread = Math.max(latSpread, lngSpread);
+        const zoomLevel = spread < 0.01 ? 14 : spread < 0.05 ? 13 : spread < 0.1 ? 12 : spread < 0.5 ? 11 : spread < 1 ? 9 : 7;
+        try { mapRef.current.setZoom(zoomLevel); } catch { /* ok */ }
       }
     };
 

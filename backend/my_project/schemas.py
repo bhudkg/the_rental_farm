@@ -49,6 +49,8 @@ class TreeBase(BaseModel):
     min_quantity: int = 1
     season_start: int | None = None
     season_end: int | None = None
+    age: int | None = None
+    previous_year_yield: float | None = None
     image_url: str | None = None
     image_urls: list[str] = []
 
@@ -77,6 +79,8 @@ class TreeUpdate(BaseModel):
     min_quantity: int | None = None
     season_start: int | None = None
     season_end: int | None = None
+    age: int | None = None
+    previous_year_yield: float | None = None
     image_url: str | None = None
     image_urls: list[str] | None = None
 
