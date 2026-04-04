@@ -11,6 +11,7 @@ import TreeDetail from './pages/TreeDetail';
 import Orders from './pages/Orders';
 import OrderDetail from './pages/OrderDetail';
 import Login from './pages/Login';
+import Wishlist from './pages/Wishlist';
 import PaymentSuccess from './pages/PaymentSuccess';
 import PaymentFailure from './pages/PaymentFailure';
 import OwnerDashboard from './pages/owner/OwnerDashboard';
@@ -45,6 +46,7 @@ export default function App() {
             <Route path="/search" element={<SearchResults />} />
             <Route path="/trees" element={<Trees />} />
             <Route path="/trees/:id" element={<TreeDetail />} />
+            <Route path="/wishlist" element={<Wishlist />} />
             <Route path="/orders" element={<Orders />} />
             <Route path="/orders/:id" element={<OrderDetail />} />
             <Route path="/login" element={<Login />} />
