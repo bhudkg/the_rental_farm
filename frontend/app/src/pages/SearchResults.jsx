@@ -82,9 +82,14 @@ export default function SearchResults() {
   const initialCity = searchParams.get('city') || '';
   const initialState = searchParams.get('state') || '';
   const initialType = searchParams.get('type') || '';
-  const initialLocation = initialCity && initialState
-    ? JSON.stringify({ city: initialCity, state: initialState })
-    : '';
+  const initialNearby = searchParams.get('nearby') === '1';
+  const initialLat = searchParams.get('lat');
+  const initialLng = searchParams.get('lng');
+  const initialLocation = initialNearby && initialLat && initialLng
+    ? JSON.stringify({ nearby: true, lat: parseFloat(initialLat), lng: parseFloat(initialLng) })
+    : initialCity && initialState
+      ? JSON.stringify({ city: initialCity, state: initialState })
+      : '';
 
   const [trees, setTrees] = useState([]);
   const [activeType, setActiveType] = useState(initialType || null);
@@ -105,6 +110,8 @@ export default function SearchResults() {
   const [pendingType, setPendingType] = useState(initialType);
   const [locOpen, setLocOpen] = useState(false);
   const [typeOpen, setTypeOpen] = useState(false);
+  const [geoLoading, setGeoLoading] = useState(false);
+  const [geoError, setGeoError] = useState('');
   const locRef = useRef(null);
   const typeRef = useRef(null);
 
@@ -131,8 +138,14 @@ export default function SearchResults() {
     const filters = {};
     if (activeType) filters.type = activeType;
     if (parsedLocation) {
-      filters.city = parsedLocation.city;
-      filters.state = parsedLocation.state;
+      if (parsedLocation.nearby) {
+        filters.lat = parsedLocation.lat;
+        filters.lng = parsedLocation.lng;
+        filters.radius_km = 150;
+      } else {
+        filters.city = parsedLocation.city;
+        filters.state = parsedLocation.state;
+      }
     }
     const pr = PRICE_RANGES[priceRange];
     if (pr.min != null) filters.price_min = pr.min;
@@ -145,6 +158,38 @@ export default function SearchResults() {
       .finally(() => setLoading(false));
   }, [activeType, selectedLocation, priceRange, sizeFilter, sortBy, maintenance]);
 
+  const handleNearMe = () => {
+    const cached = sessionStorage.getItem('userCoords');
+    if (cached) {
+      try {
+        const { lat, lng } = JSON.parse(cached);
+        setPendingLocation(JSON.stringify({ nearby: true, lat, lng }));
+        setLocOpen(false);
+        return;
+      } catch { /* fall through to geolocation */ }
+    }
+    if (!navigator.geolocation) {
+      setGeoError('Geolocation is not supported by your browser');
+      return;
+    }
+    setGeoLoading(true);
+    setGeoError('');
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        sessionStorage.setItem('userCoords', JSON.stringify(coords));
+        setPendingLocation(JSON.stringify({ nearby: true, ...coords }));
+        setGeoLoading(false);
+        setLocOpen(false);
+      },
+      () => {
+        setGeoError('Location access denied. Please enable it in your browser settings.');
+        setGeoLoading(false);
+      },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 },
+    );
+  };
+
   const applySearch = () => {
     const params = {};
     let loc = pendingLocation;
@@ -153,8 +198,14 @@ export default function SearchResults() {
     if (loc) {
       try {
         const p = JSON.parse(loc);
-        params.city = p.city;
-        params.state = p.state;
+        if (p.nearby) {
+          params.nearby = '1';
+          params.lat = p.lat;
+          params.lng = p.lng;
+        } else {
+          params.city = p.city;
+          params.state = p.state;
+        }
       } catch { /* ignore */ }
     }
     if (type) params.type = type;
@@ -191,7 +242,7 @@ export default function SearchResults() {
                 label="Where to?"
                 placeholder="Select location"
                 value={pendingLocation}
-                displayValue={pendingLocation ? (() => { try { const p = JSON.parse(pendingLocation); return `${p.city}, ${p.state}`; } catch { return ''; } })() : ''}
+                displayValue={pendingLocation ? (() => { try { const p = JSON.parse(pendingLocation); return p.nearby ? 'Near my location' : `${p.city}, ${p.state}`; } catch { return ''; } })() : ''}
                 dropdownRef={locRef}
                 icon={
                   <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -208,6 +259,37 @@ export default function SearchResults() {
                   >
                     All locations
                   </button>
+                  <button
+                    type="button"
+                    onClick={handleNearMe}
+                    disabled={geoLoading}
+                    className={`w-full text-left px-4 py-2.5 text-sm flex items-center gap-2.5 hover:bg-blue-50 transition-colors border-b border-gray-100 ${
+                      (() => { try { return JSON.parse(pendingLocation)?.nearby; } catch { return false; } })()
+                        ? 'text-blue-600 font-semibold bg-blue-50/50'
+                        : 'text-blue-600'
+                    }`}
+                  >
+                    {geoLoading ? (
+                      <svg className="w-3.5 h-3.5 shrink-0 animate-spin text-blue-500" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                    ) : (
+                      <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 12m-3 0a3 3 0 1 0 6 0a3 3 0 1 0-6 0" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 2v3m0 14v3m10-10h-3M5 12H2" />
+                      </svg>
+                    )}
+                    {geoLoading ? 'Getting location...' : 'Near my location'}
+                    {(() => { try { return JSON.parse(pendingLocation)?.nearby; } catch { return false; } })() && (
+                      <svg className="w-4 h-4 ml-auto text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                      </svg>
+                    )}
+                  </button>
+                  {geoError && (
+                    <p className="px-4 py-2 text-xs text-red-500">{geoError}</p>
+                  )}
                   {(() => {
                     const grouped = {};
                     filterOptions.locations.forEach((loc) => {
@@ -347,7 +429,11 @@ export default function SearchResults() {
           <div className="flex items-center gap-3">
             <h2 className="text-base font-bold text-gray-900">
               {activeType ? `${activeType.charAt(0).toUpperCase() + activeType.slice(1)} Trees` : 'All Fruit Trees'}
-              {parsedLocation && <span className="text-gray-400 font-normal"> in {parsedLocation.city}, {parsedLocation.state}</span>}
+              {parsedLocation && (
+                <span className="text-gray-400 font-normal">
+                  {parsedLocation.nearby ? ' near you (within 150 km)' : ` in ${parsedLocation.city}, ${parsedLocation.state}`}
+                </span>
+              )}
             </h2>
             <span className="text-xs text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full font-medium">
               {trees.length} {trees.length === 1 ? 'result' : 'results'}

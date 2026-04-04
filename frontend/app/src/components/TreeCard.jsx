@@ -1,4 +1,7 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { toggleWishlist } from '../services/api';
+import useStore from '../store/useStore';
 
 const TYPE_COLORS = {
   mango: 'bg-yellow-100 text-yellow-700',
@@ -32,6 +35,73 @@ function priceText(tree) {
   return `₹${tree.price_per_season.toLocaleString('en-IN')}`;
 }
 
+function useWishlist(tree) {
+  const user = useStore((s) => s.user);
+  const override = useStore((s) => s.wishlistOverrides[tree.id]);
+  const setOverride = useStore((s) => s.setWishlistOverride);
+
+  const wishlisted = override ? override.wishlisted : !!tree.is_wishlisted;
+  const count = override ? override.count : (tree.wishlist_count || 0);
+
+  const [busy, setBusy] = useState(false);
+
+  const toggle = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!user) return;
+    if (busy) return;
+
+    const newWishlisted = !wishlisted;
+    const newCount = newWishlisted ? count + 1 : Math.max(0, count - 1);
+    setOverride(tree.id, { wishlisted: newWishlisted, count: newCount });
+
+    setBusy(true);
+    try {
+      const res = await toggleWishlist(tree.id);
+      setOverride(tree.id, { wishlisted: res.wishlisted, count: res.wishlist_count });
+    } catch {
+      setOverride(tree.id, { wishlisted, count });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return { wishlisted, count, toggle, loggedIn: !!user };
+}
+
+function WishlistButton({ tree, className = '' }) {
+  const { wishlisted, count, toggle, loggedIn } = useWishlist(tree);
+
+  return (
+    <button
+      onClick={toggle}
+      className={`flex items-center gap-1 ${className}`}
+      title={loggedIn ? (wishlisted ? 'Remove from wishlist' : 'Add to wishlist') : 'Login to wishlist'}
+      disabled={!loggedIn}
+    >
+      <svg
+        className={`w-5 h-5 transition-colors duration-200 ${
+          wishlisted
+            ? 'text-red-500 fill-red-500'
+            : 'text-gray-400 fill-none hover:text-red-400'
+        } ${!loggedIn ? 'opacity-50' : 'cursor-pointer'}`}
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={1.5}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"
+        />
+      </svg>
+      {count > 0 && (
+        <span className="text-[10px] font-semibold text-gray-500">{count}</span>
+      )}
+    </button>
+  );
+}
+
 // ─── Option A: Airbnb-style (Clean & Minimal) ───────────────────────────────
 
 export function TreeCardA({ tree }) {
@@ -51,6 +121,9 @@ export function TreeCardA({ tree }) {
           loading="lazy"
           onError={(e) => { e.target.src = PLACEHOLDER_IMG; }}
         />
+        <div className="absolute top-2 right-2 z-10">
+          <WishlistButton tree={tree} className="bg-white/80 backdrop-blur-sm rounded-full p-1.5 shadow-sm hover:bg-white transition-colors" />
+        </div>
       </div>
 
       <div className="mt-2.5">
@@ -123,6 +196,9 @@ export function TreeCardB({ tree }) {
           loading="lazy"
           onError={(e) => { e.target.src = PLACEHOLDER_IMG; }}
         />
+        <div className="absolute top-2.5 left-2.5 z-10">
+          <WishlistButton tree={tree} className="bg-white/80 backdrop-blur-sm rounded-full p-1.5 shadow-sm hover:bg-white transition-colors" />
+        </div>
         {price && (
           <div className="absolute top-2.5 right-2.5 bg-white/90 backdrop-blur-sm text-xs font-bold text-primary px-2.5 py-1 rounded-lg shadow-sm">
             {price}/season
@@ -232,6 +308,9 @@ export function TreeCardC({ tree }) {
           loading="lazy"
           onError={(e) => { e.target.src = PLACEHOLDER_IMG; }}
         />
+        <div className="absolute top-2.5 right-2.5 z-10">
+          <WishlistButton tree={tree} className="bg-white/80 backdrop-blur-sm rounded-full p-1.5 shadow-sm hover:bg-white transition-colors" />
+        </div>
         <span className={`absolute bottom-2.5 left-2.5 text-[10px] font-bold px-2 py-0.5 rounded-full capitalize backdrop-blur-sm ${TYPE_COLORS[tree.type] || 'bg-gray-100 text-gray-600'}`}>
           {tree.type}
         </span>

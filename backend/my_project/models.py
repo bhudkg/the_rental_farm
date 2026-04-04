@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, func
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -20,6 +20,7 @@ class User(Base):
 
     orders: Mapped[list["Order"]] = relationship(back_populates="user")
     listed_trees: Mapped[list["Tree"]] = relationship(back_populates="owner")
+    wishlisted_trees: Mapped[list["Wishlist"]] = relationship(back_populates="user")
 
 
 class Tree(Base):
@@ -55,6 +56,7 @@ class Tree(Base):
 
     owner: Mapped["User | None"] = relationship(back_populates="listed_trees")
     orders: Mapped[list["Order"]] = relationship(back_populates="tree")
+    wishlisted_by: Mapped[list["Wishlist"]] = relationship(back_populates="tree")
 
 
 class Order(Base):
@@ -77,3 +79,18 @@ class Order(Base):
 
     user: Mapped["User"] = relationship(back_populates="orders")
     tree: Mapped["Tree"] = relationship(back_populates="orders")
+
+
+class Wishlist(Base):
+    __tablename__ = "wishlists"
+    __table_args__ = (
+        UniqueConstraint("user_id", "tree_id", name="uq_user_tree_wishlist"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    tree_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("trees.id"), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    user: Mapped["User"] = relationship(back_populates="wishlisted_trees")
+    tree: Mapped["Tree"] = relationship(back_populates="wishlisted_by")

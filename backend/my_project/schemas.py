@@ -89,6 +89,9 @@ class TreeOut(TreeBase):
     id: uuid.UUID
     owner_id: uuid.UUID | None = None
     created_at: datetime
+    distance_km: float | None = None
+    wishlist_count: int = 0
+    is_wishlisted: bool = False
 
     model_config = {"from_attributes": True}
 

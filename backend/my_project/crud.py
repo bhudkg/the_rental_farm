@@ -1,8 +1,60 @@
+import math
 import uuid
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from models import Order, Tree, User
+from models import Order, Tree, User, Wishlist
+
+_EARTH_RADIUS_KM = 6371.0
+
+
+def _haversine_expr(lat: float, lng: float):
+    """SQLAlchemy expression returning distance in km from (lat, lng) to tree's coords."""
+    dlat = func.radians(Tree.latitude - lat)
+    dlng = func.radians(Tree.longitude - lng)
+    a = (
+        func.sin(dlat / 2) * func.sin(dlat / 2)
+        + func.cos(func.radians(lat))
+        * func.cos(func.radians(Tree.latitude))
+        * func.sin(dlng / 2)
+        * func.sin(dlng / 2)
+    )
+    return _EARTH_RADIUS_KM * 2 * func.atan2(func.sqrt(a), func.sqrt(1 - a))
+
+
+def _bbox_bounds(lat: float, lng: float, radius_km: float):
+    """Rough bounding-box for a fast pre-filter before the expensive Haversine."""
+    delta_lat = radius_km / 111.0
+    delta_lng = radius_km / (111.0 * math.cos(math.radians(lat)))
+    return lat - delta_lat, lat + delta_lat, lng - delta_lng, lng + delta_lng
+
+
+def _annotate_wishlist(trees: list[Tree], db: Session, current_user_id: uuid.UUID | None = None):
+    """Attach wishlist_count and is_wishlisted to each tree in-place."""
+    if not trees:
+        return
+    tree_ids = [t.id for t in trees]
+    counts = (
+        db.query(Wishlist.tree_id, func.count(Wishlist.id))
+        .filter(Wishlist.tree_id.in_(tree_ids))
+        .group_by(Wishlist.tree_id)
+        .all()
+    )
+    count_map = {tid: cnt for tid, cnt in counts}
+
+    wishlisted_set = set()
+    if current_user_id:
+        rows = (
+            db.query(Wishlist.tree_id)
+            .filter(Wishlist.user_id == current_user_id, Wishlist.tree_id.in_(tree_ids))
+            .all()
+        )
+        wishlisted_set = {r[0] for r in rows}
+
+    for tree in trees:
+        tree.wishlist_count = count_map.get(tree.id, 0)
+        tree.is_wishlisted = tree.id in wishlisted_set
 
 
 # ── Trees ──
@@ -19,10 +71,29 @@ def get_trees(
     search: str | None = None,
     state: str | None = None,
     city: str | None = None,
+    lat: float | None = None,
+    lng: float | None = None,
+    radius_km: float | None = None,
     skip: int = 0,
     limit: int = 50,
+    current_user_id: uuid.UUID | None = None,
 ) -> list[Tree]:
-    q = db.query(Tree)
+    nearby_mode = lat is not None and lng is not None
+    effective_radius = radius_km if radius_km else 150.0
+
+    if nearby_mode:
+        dist_expr = _haversine_expr(lat, lng).label("distance_km")
+        q = db.query(Tree, dist_expr)
+
+        q = q.filter(Tree.latitude.isnot(None), Tree.longitude.isnot(None))
+        min_lat, max_lat, min_lng, max_lng = _bbox_bounds(lat, lng, effective_radius)
+        q = q.filter(
+            Tree.latitude.between(min_lat, max_lat),
+            Tree.longitude.between(min_lng, max_lng),
+        )
+    else:
+        q = db.query(Tree)
+
     if tree_type:
         q = q.filter(Tree.type == tree_type)
     if variety:
@@ -37,10 +108,34 @@ def get_trees(
         q = q.filter(
             Tree.name.ilike(f"%{search}%") | Tree.variety.ilike(f"%{search}%")
         )
-    if state:
-        q = q.filter(Tree.state == state)
-    if city:
-        q = q.filter(Tree.city.ilike(f"%{city}%"))
+    if not nearby_mode:
+        if state:
+            q = q.filter(Tree.state == state)
+        if city:
+            q = q.filter(Tree.city.ilike(f"%{city}%"))
+
+    if nearby_mode:
+        dist_filter = _haversine_expr(lat, lng)
+        q = q.filter(dist_filter <= effective_radius)
+
+        if sort_by == "price_low":
+            q = q.order_by(Tree.price_per_season.asc())
+        elif sort_by == "price_high":
+            q = q.order_by(Tree.price_per_season.desc())
+        elif sort_by == "name_asc":
+            q = q.order_by(Tree.name.asc())
+        elif sort_by == "name_desc":
+            q = q.order_by(Tree.name.desc())
+        else:
+            q = q.order_by(dist_expr.asc())
+
+        rows = q.offset(skip).limit(limit).all()
+        trees = []
+        for tree, distance in rows:
+            tree.distance_km = round(distance, 1)
+            trees.append(tree)
+        _annotate_wishlist(trees, db, current_user_id)
+        return trees
 
     if sort_by == "price_low":
         q = q.order_by(Tree.price_per_season.asc())
@@ -53,15 +148,20 @@ def get_trees(
     else:
         q = q.order_by(Tree.created_at.desc())
 
-    return q.offset(skip).limit(limit).all()
+    trees = q.offset(skip).limit(limit).all()
+    _annotate_wishlist(trees, db, current_user_id)
+    return trees
 
 
-def get_tree(db: Session, tree_id: uuid.UUID, load_owner: bool = False) -> Tree | None:
+def get_tree(db: Session, tree_id: uuid.UUID, load_owner: bool = False, current_user_id: uuid.UUID | None = None) -> Tree | None:
     from sqlalchemy.orm import joinedload
     q = db.query(Tree)
     if load_owner:
         q = q.options(joinedload(Tree.owner))
-    return q.filter(Tree.id == tree_id).first()
+    tree = q.filter(Tree.id == tree_id).first()
+    if tree:
+        _annotate_wishlist([tree], db, current_user_id)
+    return tree
 
 
 def create_tree(db: Session, data: dict) -> Tree:
@@ -136,3 +236,37 @@ def get_orders_for_owner_trees(db: Session, owner_id: uuid.UUID) -> list[Order]:
         .order_by(Order.created_at.desc())
         .all()
     )
+
+
+# ── Wishlist ──
+
+def toggle_wishlist(db: Session, user_id: uuid.UUID, tree_id: uuid.UUID) -> bool:
+    """Toggle wishlist status. Returns True if added, False if removed."""
+    existing = (
+        db.query(Wishlist)
+        .filter(Wishlist.user_id == user_id, Wishlist.tree_id == tree_id)
+        .first()
+    )
+    if existing:
+        db.delete(existing)
+        db.commit()
+        return False
+    db.add(Wishlist(user_id=user_id, tree_id=tree_id))
+    db.commit()
+    return True
+
+
+def get_wishlist_for_user(db: Session, user_id: uuid.UUID) -> list[Tree]:
+    tree_ids = (
+        db.query(Wishlist.tree_id)
+        .filter(Wishlist.user_id == user_id)
+        .order_by(Wishlist.created_at.desc())
+        .subquery()
+    )
+    trees = db.query(Tree).filter(Tree.id.in_(tree_ids)).all()
+    _annotate_wishlist(trees, db, user_id)
+    return trees
+
+
+def get_wishlist_count(db: Session, tree_id: uuid.UUID) -> int:
+    return db.query(func.count(Wishlist.id)).filter(Wishlist.tree_id == tree_id).scalar() or 0

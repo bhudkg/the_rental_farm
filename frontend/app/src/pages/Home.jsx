@@ -73,6 +73,8 @@ export default function Home() {
   const [pendingType, setPendingType] = useState('');
   const [locOpen, setLocOpen] = useState(false);
   const [typeOpen, setTypeOpen] = useState(false);
+  const [geoLoading, setGeoLoading] = useState(false);
+  const [geoError, setGeoError] = useState('');
   const locRef = useRef(null);
   const typeRef = useRef(null);
 
@@ -96,14 +98,52 @@ export default function Home() {
   const totalPages = Math.ceil(trees.length / perPage);
   const paginatedTrees = trees.slice((page - 1) * perPage, page * perPage);
 
+  const handleNearMe = () => {
+    const cached = sessionStorage.getItem('userCoords');
+    if (cached) {
+      try {
+        const { lat, lng } = JSON.parse(cached);
+        setPendingLocation(JSON.stringify({ nearby: true, lat, lng }));
+        setLocOpen(false);
+        return;
+      } catch { /* fall through to geolocation */ }
+    }
+    if (!navigator.geolocation) {
+      setGeoError('Geolocation is not supported by your browser');
+      return;
+    }
+    setGeoLoading(true);
+    setGeoError('');
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        sessionStorage.setItem('userCoords', JSON.stringify(coords));
+        setPendingLocation(JSON.stringify({ nearby: true, ...coords }));
+        setGeoLoading(false);
+        setLocOpen(false);
+      },
+      () => {
+        setGeoError('Location access denied. Please enable it in your browser settings.');
+        setGeoLoading(false);
+      },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 },
+    );
+  };
+
   const handleSearch = () => {
     if (!pendingLocation && !pendingType) return;
     const params = new URLSearchParams();
     if (pendingLocation) {
       try {
         const p = JSON.parse(pendingLocation);
-        params.set('city', p.city);
-        params.set('state', p.state);
+        if (p.nearby) {
+          params.set('nearby', '1');
+          params.set('lat', p.lat);
+          params.set('lng', p.lng);
+        } else {
+          params.set('city', p.city);
+          params.set('state', p.state);
+        }
       } catch { /* ignore */ }
     }
     if (pendingType) params.set('type', pendingType);
@@ -123,7 +163,7 @@ export default function Home() {
                   label="Where to?"
                   placeholder="Select location"
                   value={pendingLocation}
-                  displayValue={pendingLocation ? (() => { try { const p = JSON.parse(pendingLocation); return `${p.city}, ${p.state}`; } catch { return ''; } })() : ''}
+                  displayValue={pendingLocation ? (() => { try { const p = JSON.parse(pendingLocation); return p.nearby ? 'Near my location' : `${p.city}, ${p.state}`; } catch { return ''; } })() : ''}
                   dropdownRef={locRef}
                   icon={
                     <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -140,6 +180,37 @@ export default function Home() {
                     >
                       All locations
                     </button>
+                    <button
+                      type="button"
+                      onClick={handleNearMe}
+                      disabled={geoLoading}
+                      className={`w-full text-left px-4 py-2.5 text-sm flex items-center gap-2.5 hover:bg-blue-50 transition-colors border-b border-gray-100 ${
+                        (() => { try { return JSON.parse(pendingLocation)?.nearby; } catch { return false; } })()
+                          ? 'text-blue-600 font-semibold bg-blue-50/50'
+                          : 'text-blue-600'
+                      }`}
+                    >
+                      {geoLoading ? (
+                        <svg className="w-3.5 h-3.5 shrink-0 animate-spin text-blue-500" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                        </svg>
+                      ) : (
+                        <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 12m-3 0a3 3 0 1 0 6 0a3 3 0 1 0-6 0" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 2v3m0 14v3m10-10h-3M5 12H2" />
+                        </svg>
+                      )}
+                      {geoLoading ? 'Getting location...' : 'Near my location'}
+                      {(() => { try { return JSON.parse(pendingLocation)?.nearby; } catch { return false; } })() && (
+                        <svg className="w-4 h-4 ml-auto text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                        </svg>
+                      )}
+                    </button>
+                    {geoError && (
+                      <p className="px-4 py-2 text-xs text-red-500">{geoError}</p>
+                    )}
                     {(() => {
                       const grouped = {};
                       filterOptions.locations.forEach((loc) => {

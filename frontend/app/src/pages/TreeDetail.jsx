@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import BookingModal from '../components/BookingModal';
 import MapplsMap from '../components/MapplsMap';
-import { fetchTree } from '../services/api';
+import { fetchTree, toggleWishlist } from '../services/api';
 import useStore, { DELIVERY_FEE } from '../store/useStore';
 
 const PLACEHOLDER_IMG = 'https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=800&q=80';
@@ -17,7 +17,7 @@ export default function TreeDetail() {
   const [showModal, setShowModal] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
 
-  const { addToCart, isInCart, setCartDrawerOpen } = useStore();
+  const { addToCart, isInCart, setCartDrawerOpen, user, wishlistOverrides, setWishlistOverride } = useStore();
 
   useEffect(() => {
     fetchTree(id)
@@ -31,6 +31,28 @@ export default function TreeDetail() {
   const grandTotal = totalPrice + depositAmount;
 
   const alreadyInCart = tree ? isInCart(tree.id) : false;
+
+  const wlOverride = tree ? wishlistOverrides[tree.id] : null;
+  const isWishlisted = wlOverride ? wlOverride.wishlisted : !!tree?.is_wishlisted;
+  const wishlistCount = wlOverride ? wlOverride.count : (tree?.wishlist_count || 0);
+  const [wlBusy, setWlBusy] = useState(false);
+
+  const handleToggleWishlist = async () => {
+    if (!user || !tree) return;
+    if (wlBusy) return;
+    const newWl = !isWishlisted;
+    const newCount = newWl ? wishlistCount + 1 : Math.max(0, wishlistCount - 1);
+    setWishlistOverride(tree.id, { wishlisted: newWl, count: newCount });
+    setWlBusy(true);
+    try {
+      const res = await toggleWishlist(tree.id);
+      setWishlistOverride(tree.id, { wishlisted: res.wishlisted, count: res.wishlist_count });
+    } catch {
+      setWishlistOverride(tree.id, { wishlisted: isWishlisted, count: wishlistCount });
+    } finally {
+      setWlBusy(false);
+    }
+  };
 
   const handleAddToCart = () => {
     if (!tree) return;
@@ -180,7 +202,35 @@ export default function TreeDetail() {
                   </span>
                 )}
               </div>
-              <h1 className="text-2xl sm:text-[28px] font-bold text-gray-900 leading-tight mb-1.5">{tree.name}</h1>
+              <div className="flex items-center gap-3 mb-1.5">
+                <h1 className="text-2xl sm:text-[28px] font-bold text-gray-900 leading-tight">{tree.name}</h1>
+                <button
+                  onClick={handleToggleWishlist}
+                  disabled={!user}
+                  className="flex items-center gap-1.5 shrink-0"
+                  title={user ? (isWishlisted ? 'Remove from wishlist' : 'Add to wishlist') : 'Login to wishlist'}
+                >
+                  <svg
+                    className={`w-6 h-6 transition-colors duration-200 ${
+                      isWishlisted
+                        ? 'text-red-500 fill-red-500'
+                        : 'text-gray-400 fill-none hover:text-red-400'
+                    } ${!user ? 'opacity-50' : 'cursor-pointer'}`}
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={1.5}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"
+                    />
+                  </svg>
+                  {wishlistCount > 0 && (
+                    <span className="text-xs font-semibold text-gray-500">{wishlistCount}</span>
+                  )}
+                </button>
+              </div>
               {locationParts.length > 0 && (
                 <p className="flex items-center gap-1.5 text-sm text-gray-500">
                   <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>

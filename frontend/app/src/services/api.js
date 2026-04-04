@@ -41,6 +41,9 @@ export const fetchTrees = (filters = {}) => {
     if (filters.state) params.state = filters.state;
     if (filters.city) params.city = filters.city;
     if (filters.variety) params.variety = filters.variety;
+    if (filters.lat != null) params.lat = filters.lat;
+    if (filters.lng != null) params.lng = filters.lng;
+    if (filters.radius_km != null) params.radius_km = filters.radius_km;
   }
   return api.get('/trees', { params }).then((r) => r.data);
 };
@@ -77,6 +80,14 @@ export const getPaymentStatus = (orderId) =>
 
 export const cancelOrder = (orderId) =>
   api.post(`/orders/${orderId}/cancel`).then((r) => r.data);
+
+// ── Wishlist ──
+
+export const toggleWishlist = (treeId) =>
+  api.post(`/wishlist/${treeId}`).then((r) => r.data);
+
+export const fetchWishlist = () =>
+  api.get('/wishlist').then((r) => r.data);
 
 // ── Auth ──
 

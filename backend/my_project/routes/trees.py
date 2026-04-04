@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 import crud
-from auth_utils import require_user
+from auth_utils import get_current_user, require_user
 from database import get_db
 from models import Tree, User
 from schemas import TreeCreate, TreeDetailOut, TreeOut, TreeUpdate
@@ -24,9 +24,13 @@ def list_trees(
     search: str | None = Query(None, description="Search by tree name"),
     state: str | None = Query(None, description="Filter by state"),
     city: str | None = Query(None, description="Filter by city"),
+    lat: float | None = Query(None, description="User latitude for nearby search"),
+    lng: float | None = Query(None, description="User longitude for nearby search"),
+    radius_km: float | None = Query(None, description="Search radius in km (default 150)"),
     skip: int = 0,
     limit: int = 50,
     db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_current_user),
 ):
     return crud.get_trees(
         db,
@@ -40,8 +44,12 @@ def list_trees(
         search=search,
         state=state,
         city=city,
+        lat=lat,
+        lng=lng,
+        radius_km=radius_km,
         skip=skip,
         limit=limit,
+        current_user_id=current_user.id if current_user else None,
     )
 
 
@@ -70,8 +78,12 @@ def get_filter_options(db: Session = Depends(get_db)):
 
 
 @router.get("/{tree_id}", response_model=TreeDetailOut)
-def get_tree(tree_id: uuid.UUID, db: Session = Depends(get_db)):
-    tree = crud.get_tree(db, tree_id, load_owner=True)
+def get_tree(
+    tree_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_current_user),
+):
+    tree = crud.get_tree(db, tree_id, load_owner=True, current_user_id=current_user.id if current_user else None)
     if not tree:
         raise HTTPException(status_code=404, detail="Tree not found")
     return tree

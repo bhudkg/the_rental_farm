@@ -67,6 +67,19 @@ const useStore = create((set, get) => ({
 
   isInCart: (treeId) => get().cart.some((item) => item.tree.id === treeId),
 
+  // ── Wishlist (optimistic local overrides) ──
+  wishlistOverrides: {},
+
+  setWishlistOverride: (treeId, { wishlisted, count }) =>
+    set((state) => ({
+      wishlistOverrides: {
+        ...state.wishlistOverrides,
+        [treeId]: { wishlisted, count },
+      },
+    })),
+
+  clearWishlistOverrides: () => set({ wishlistOverrides: {} }),
+
   // ── Auth ──
   setUser: (user) => {
     if (user) {
