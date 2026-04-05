@@ -9,43 +9,16 @@ export default function CartDrawer() {
   const { cart, cartDrawerOpen, setCartDrawerOpen, removeFromCart, getCartTotal, getCartCount } = useStore();
   const [showCheckout, setShowCheckout] = useState(false);
   const [singleCheckoutItem, setSingleCheckoutItem] = useState(null);
-  const [hoveredTreeId, setHoveredTreeId] = useState(null);
-  const [lockedTreeId, setLockedTreeId] = useState(null);
   const backdropRef = useRef(null);
-  const hoverTimer = useRef(null);
-
-  const handleMouseEnter = (id) => {
-    if (hoverTimer.current) clearTimeout(hoverTimer.current);
-    setHoveredTreeId(id);
-  };
-
-  const handleMouseLeave = () => {
-    hoverTimer.current = setTimeout(() => {
-      setHoveredTreeId(null);
-    }, 300);
-  };
 
   useEffect(() => {
     if (cartDrawerOpen) {
       document.body.style.overflow = 'hidden';
-      if (cart.length > 0 && !lockedTreeId) {
-        setLockedTreeId(cart[0].tree.id);
-      }
     } else {
       document.body.style.overflow = '';
     }
     return () => { document.body.style.overflow = ''; };
-  }, [cartDrawerOpen, cart, lockedTreeId]);
-
-  useEffect(() => {
-    if (cart.length > 0) {
-      if (!lockedTreeId || !cart.some(item => item.tree.id === lockedTreeId)) {
-        setLockedTreeId(cart[0].tree.id);
-      }
-    } else {
-      setLockedTreeId(null);
-    }
-  }, [cart, lockedTreeId]);
+  }, [cartDrawerOpen]);
 
   if (!cartDrawerOpen && !showCheckout) return null;
 
@@ -70,85 +43,7 @@ export default function CartDrawer() {
             onClick={() => setCartDrawerOpen(false)}
           />
 
-          {/* Hover Preview Panel (Desktop only) */}
-          {(hoveredTreeId || lockedTreeId) && (() => {
-            const activeId = hoveredTreeId || lockedTreeId;
-            const previewTree = cart.find(item => item.tree.id === activeId)?.tree;
-            if (!previewTree) return null;
-            return (
-              <div 
-                className="hidden md:flex flex-col w-[400px] bg-white rounded-3xl shadow-2xl mr-6 my-auto h-auto max-h-[85vh] self-center animate-scale-in border border-gray-100 z-50 overflow-hidden"
-                onMouseEnter={() => { if (hoverTimer.current) clearTimeout(hoverTimer.current); }}
-                onMouseLeave={handleMouseLeave}
-              >
-                <div className="h-56 relative shrink-0">
-                  <img 
-                    src={previewTree.image_urls?.[0] || previewTree.image_url || PLACEHOLDER_IMG} 
-                    alt={previewTree.name} 
-                    className="w-full h-full object-cover" 
-                    onError={(e) => { e.target.src = PLACEHOLDER_IMG; }}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex items-end p-6">
-                    <div>
-                      <h3 className="text-white font-extrabold text-2xl truncate drop-shadow-sm mb-1">{previewTree.name}</h3>
-                      <div className="flex items-center gap-2">
-                        <span className="px-2.5 py-0.5 bg-primary/90 backdrop-blur-sm text-white text-[11px] uppercase tracking-wider font-bold rounded-md">
-                          {previewTree.type}
-                        </span>
-                        {previewTree.variety && (
-                          <span className="px-2.5 py-0.5 bg-white/20 backdrop-blur-sm text-white text-[11px] uppercase tracking-wider font-semibold rounded-md">
-                            {previewTree.variety}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="p-6 overflow-y-auto w-full">
-                  <p className="text-sm text-gray-600 mb-6 leading-relaxed">
-                    {previewTree.description || `Experience the joy of fresh ${previewTree.type || 'fruits'} straight from your adopted tree. Perfect for individuals and families looking to bond with nature and eat organic.`}
-                  </p>
-                  
-                  <div className="mb-6">
-                    <h4 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center">
-                        <svg className="w-3.5 h-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                      </div>
-                      Premium Benefits
-                    </h4>
-                    <ul className="text-sm text-gray-600 space-y-2 pl-2">
-                      <li className="flex items-start gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1.5 shrink-0" />
-                        <span>100% Organic & Chemical-free farming</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1.5 shrink-0" />
-                        <span>Regular photo updates of your tree's progress</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1.5 shrink-0" />
-                        <span>Guaranteed prime seasonal harvest yield</span>
-                      </li>
-                    </ul>
-                  </div>
 
-                  <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100/80 mt-auto shadow-sm">
-                    <div className="flex items-center gap-2 mb-2.5">
-                      <div className="flex -space-x-1">
-                        {[1, 2, 3, 4, 5].map(i => (
-                          <svg key={i} className="w-4 h-4 text-accent drop-shadow-sm" viewBox="0 0 20 20" fill="currentColor">
-                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                          </svg>
-                        ))}
-                      </div>
-                      <span className="text-[13px] font-bold text-gray-800">4.9<span className="text-gray-400 font-medium ml-1">(24 reviews)</span></span>
-                    </div>
-                    <p className="text-[13px] text-gray-500 italic leading-relaxed">"The {previewTree.type || 'fruits'} were incredibly sweet and fresh. Best decision ever to rent this tree!" – Verified Adopter</p>
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
 
           {/* Panel */}
           <div className="relative w-full max-w-md bg-white shadow-2xl flex flex-col animate-slide-in-right">
@@ -206,14 +101,7 @@ export default function CartDrawer() {
                     return (
                       <div 
                         key={tree.id} 
-                        onClick={() => setLockedTreeId(tree.id)}
-                        className={`flex gap-3 p-3 rounded-xl border transition-all duration-300 cursor-pointer shadow-sm ${
-                          lockedTreeId === tree.id 
-                            ? 'bg-primary/5 border-primary shadow-md' 
-                            : 'border-gray-100 bg-white hover:border-gray-200 hover:shadow-md hover:-translate-y-1'
-                        }`}
-                        onMouseEnter={() => handleMouseEnter(tree.id)}
-                        onMouseLeave={handleMouseLeave}
+                        className="flex gap-3 p-3 rounded-xl border transition-all duration-300 cursor-pointer shadow-sm border-gray-100 bg-white hover:border-gray-200 hover:shadow-md hover:-translate-y-1"
                       >
                         <Link
                           to={`/trees/${tree.id}`}
