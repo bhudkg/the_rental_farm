@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import BookingModal from '../components/BookingModal';
 import MapplsMap from '../components/MapplsMap';
-import { fetchTree, toggleWishlist } from '../services/api';
+import { fetchTree, toggleWishlist, fetchOwnerRatings } from '../services/api';
 import useStore, { DELIVERY_FEE } from '../store/useStore';
 
 const PLACEHOLDER_IMG = 'https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=800&q=80';
@@ -275,22 +275,10 @@ export default function TreeDetail() {
               </>
             )}
 
-            {/* Owner info */}
+            {/* Owner info + ratings */}
             {tree.owner && (
               <>
-                <div className="flex items-center gap-4 p-4 rounded-xl bg-gray-50 border border-gray-100 mb-6">
-                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                    <span className="text-lg font-bold text-primary">
-                      {tree.owner.name?.charAt(0)?.toUpperCase() || '?'}
-                    </span>
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">Listed by {tree.owner.name}</p>
-                    <p className="text-xs text-gray-400">
-                      Member since {new Date(tree.owner.created_at).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}
-                    </p>
-                  </div>
-                </div>
+                <OwnerSection owner={tree.owner} />
                 <hr className="border-gray-100 mb-6" />
               </>
             )}
@@ -535,6 +523,150 @@ function PhotoViewer({ images, treeName, activeImg, setActiveImg, onClose }) {
     </div>
   );
 }
+
+function StarRow({ rating, size = 'sm' }) {
+  const cls = size === 'sm' ? 'w-3.5 h-3.5' : 'w-4.5 h-4.5';
+  return (
+    <span className="inline-flex items-center gap-0.5">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <svg
+          key={star}
+          className={`${cls} ${
+            star <= Math.round(rating)
+              ? 'text-amber-400 fill-amber-400'
+              : 'text-gray-200 fill-gray-200'
+          }`}
+          viewBox="0 0 20 20"
+        >
+          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+        </svg>
+      ))}
+    </span>
+  );
+}
+
+
+function OwnerSection({ owner }) {
+  const [showReviews, setShowReviews] = useState(false);
+  const [reviews, setReviews] = useState([]);
+  const [loadingReviews, setLoadingReviews] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  const hasRating = owner.avg_rating != null && owner.rating_count > 0;
+
+  const handleToggleReviews = async () => {
+    if (!showReviews && !loaded) {
+      setLoadingReviews(true);
+      try {
+        const data = await fetchOwnerRatings(owner.id);
+        setReviews(data);
+      } catch {
+        setReviews([]);
+      } finally {
+        setLoadingReviews(false);
+        setLoaded(true);
+      }
+    }
+    setShowReviews((prev) => !prev);
+  };
+
+  return (
+    <div className="mb-6">
+      {/* Owner card */}
+      <div className="flex items-center gap-4 p-4 rounded-xl bg-gray-50 border border-gray-100">
+        <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+          <span className="text-lg font-bold text-primary">
+            {owner.name?.charAt(0)?.toUpperCase() || '?'}
+          </span>
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-gray-900">Listed by {owner.name}</p>
+          <p className="text-xs text-gray-400 mt-0.5">
+            Member since {new Date(owner.created_at).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}
+          </p>
+        </div>
+
+        {/* Rating summary — always visible */}
+        <button
+          onClick={handleToggleReviews}
+          className="flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors shrink-0"
+          title={hasRating ? 'View all reviews' : 'No reviews yet'}
+        >
+          {hasRating ? (
+            <>
+              <span className="flex items-center gap-1">
+                <StarRow rating={owner.avg_rating} />
+              </span>
+              <span className="text-xs text-gray-500">
+                <span className="font-bold text-gray-800">{owner.avg_rating}</span>
+                {' '}({owner.rating_count} {owner.rating_count === 1 ? 'review' : 'reviews'})
+              </span>
+            </>
+          ) : (
+            <>
+              <StarRow rating={0} />
+              <span className="text-[11px] text-gray-400">No reviews yet</span>
+            </>
+          )}
+        </button>
+      </div>
+
+      {/* Expandable reviews section */}
+      {showReviews && (
+        <div className="mt-3 border border-gray-100 rounded-xl overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-100">
+            <h3 className="text-sm font-semibold text-gray-900">
+              Reviews for {owner.name}
+            </h3>
+            <button
+              onClick={() => setShowReviews(false)}
+              className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              Close
+            </button>
+          </div>
+
+          {loadingReviews ? (
+            <div className="p-6 text-center">
+              <div className="w-5 h-5 border-2 border-gray-300 border-t-primary rounded-full animate-spin mx-auto" />
+            </div>
+          ) : reviews.length === 0 ? (
+            <div className="p-6 text-center">
+              <svg className="w-10 h-10 text-gray-200 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+              <p className="text-sm text-gray-400">No reviews yet.</p>
+              <p className="text-xs text-gray-300 mt-1">Reviews appear after renters receive their delivery and leave feedback.</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-100 max-h-[400px] overflow-y-auto">
+              {reviews.map((r) => (
+                <div key={r.id} className="px-4 py-3.5">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center shrink-0">
+                      <span className="text-xs font-bold text-gray-500">
+                        {r.user_name?.charAt(0)?.toUpperCase() || '?'}
+                      </span>
+                    </div>
+                    <span className="text-sm font-medium text-gray-800">{r.user_name || 'Anonymous'}</span>
+                    <StarRow rating={r.rating} />
+                    <span className="text-[11px] text-gray-400 ml-auto shrink-0">
+                      {new Date(r.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </span>
+                  </div>
+                  {r.review && (
+                    <p className="text-sm text-gray-600 leading-relaxed ml-9">{r.review}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 
 function LoadingSkeleton() {
   return (

@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends
+import uuid
+
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 import crud
@@ -41,3 +43,32 @@ def owner_stats(
         "active_orders": active_orders,
         "total_revenue": total_revenue,
     }
+
+
+@router.post("/orders/{order_id}/deliver", response_model=OrderOut)
+def mark_order_delivered(
+    order_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    owner: User = Depends(require_user),
+):
+    order = crud.get_order(db, order_id)
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    tree = crud.get_tree(db, order.tree_id)
+    if not tree or tree.owner_id != owner.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized — you don't own this tree",
+        )
+
+    if order.status != "confirmed":
+        raise HTTPException(
+            status_code=400,
+            detail=f"Only confirmed orders can be marked as delivered (current: {order.status})",
+        )
+
+    order.status = "delivered"
+    db.commit()
+    db.refresh(order, ["tree"])
+    return order

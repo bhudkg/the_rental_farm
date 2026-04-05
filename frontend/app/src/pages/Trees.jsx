@@ -28,6 +28,7 @@ const SIZES = ['All', 'Small', 'Medium', 'Large', 'Extra Large'];
 
 const SORT_OPTIONS = [
   { value: '', label: 'Newest first' },
+  { value: 'trending', label: 'Trending' },
   { value: 'price_low', label: 'Price: Low → High' },
   { value: 'price_high', label: 'Price: High → Low' },
   { value: 'name_asc', label: 'Name: A → Z' },

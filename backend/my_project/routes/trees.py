@@ -1,12 +1,13 @@
+import hashlib
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.orm import Session
 
 import crud
 from auth_utils import get_current_user, require_user
 from database import get_db
-from models import Tree, User
+from models import OwnerRating, Tree, TreeView, User
 from schemas import TreeCreate, TreeDetailOut, TreeOut, TreeUpdate
 
 router = APIRouter(prefix="/api/trees", tags=["trees"])
@@ -77,15 +78,49 @@ def get_filter_options(db: Session = Depends(get_db)):
     }
 
 
+@router.get("/trending", response_model=list[TreeOut])
+def trending_trees(
+    limit: int = Query(12, le=50),
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_current_user),
+):
+    return crud.get_trending_trees(db, limit=limit, current_user_id=current_user.id if current_user else None)
+
+
 @router.get("/{tree_id}", response_model=TreeDetailOut)
 def get_tree(
     tree_id: uuid.UUID,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User | None = Depends(get_current_user),
 ):
     tree = crud.get_tree(db, tree_id, load_owner=True, current_user_id=current_user.id if current_user else None)
     if not tree:
         raise HTTPException(status_code=404, detail="Tree not found")
+
+    if tree.owner and tree.owner_id:
+        from sqlalchemy import func as sa_func
+        row = (
+            db.query(sa_func.avg(OwnerRating.rating), sa_func.count(OwnerRating.id))
+            .filter(OwnerRating.owner_id == tree.owner_id)
+            .first()
+        )
+        if row and row[1] > 0:
+            tree.owner.avg_rating = round(float(row[0]), 1)
+            tree.owner.rating_count = row[1]
+        else:
+            tree.owner.avg_rating = None
+            tree.owner.rating_count = 0
+
+    client_ip = request.client.host if request.client else "unknown"
+    ip_hash = hashlib.sha256(client_ip.encode()).hexdigest()
+    view = TreeView(
+        tree_id=tree_id,
+        user_id=current_user.id if current_user else None,
+        ip_hash=ip_hash,
+    )
+    db.add(view)
+    db.commit()
     return tree
 
 

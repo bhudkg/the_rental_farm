@@ -53,6 +53,9 @@ export const fetchFilterOptions = () =>
 
 export const fetchTree = (id) => api.get(`/trees/${id}`).then((r) => r.data);
 
+export const fetchTrendingTrees = (limit = 12) =>
+  api.get('/trees/trending', { params: { limit } }).then((r) => r.data);
+
 export const createTree = (data) => api.post('/trees', data).then((r) => r.data);
 
 export const updateTree = (id, data) => api.put(`/trees/${id}`, data).then((r) => r.data);
@@ -95,12 +98,26 @@ export const register = (data) => api.post('/auth/register', data).then((r) => r
 
 export const login = (data) => api.post('/auth/login', data).then((r) => r.data);
 
+export const googleLogin = (idToken) =>
+  api.post('/auth/google', { id_token: idToken }).then((r) => r.data);
+
 export const fetchMe = () => api.get('/auth/me').then((r) => r.data);
 
 // ── Images ──
 
 export const storeImageUrl = (imageUrl) =>
   api.post('/upload-image', { image_url: imageUrl }).then((r) => r.data);
+
+// ── Ratings ──
+
+export const submitRating = (data) =>
+  api.post('/ratings', data).then((r) => r.data);
+
+export const fetchOwnerRatings = (ownerId) =>
+  api.get(`/ratings/owner/${ownerId}`).then((r) => r.data);
+
+export const checkCanRate = (orderId) =>
+  api.get(`/ratings/can-rate/${orderId}`).then((r) => r.data);
 
 // ── Owner ──
 
@@ -109,6 +126,9 @@ export const fetchOwnerTrees = () => api.get('/owner/trees').then((r) => r.data)
 export const fetchOwnerOrders = () => api.get('/owner/orders').then((r) => r.data);
 
 export const fetchOwnerStats = () => api.get('/owner/stats').then((r) => r.data);
+
+export const markOrderDelivered = (orderId) =>
+  api.post(`/owner/orders/${orderId}/deliver`).then((r) => r.data);
 
 // ── Geocoding ──
 

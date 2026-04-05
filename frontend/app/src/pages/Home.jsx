@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import TreeCard from '../components/TreeCard';
-import { fetchTrees, fetchFilterOptions } from '../services/api';
+import { fetchTrees, fetchFilterOptions, fetchTrendingTrees } from '../services/api';
 
 function useClickOutside(ref, handler) {
   useEffect(() => {
@@ -59,6 +59,51 @@ const CATEGORIES = [
 ];
 
 
+function Pagination({ currentPage, totalPages, onPageChange }) {
+  return (
+    <div className="flex items-center justify-center gap-2 mt-8">
+      <button
+        onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+        disabled={currentPage === 1}
+        className="w-9 h-9 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+      >
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+        </svg>
+      </button>
+      {Array.from({ length: totalPages }).map((_, i) => {
+        const p = i + 1;
+        if (totalPages > 7 && Math.abs(p - currentPage) > 2 && p !== 1 && p !== totalPages) {
+          if (p === currentPage - 3 || p === currentPage + 3) return <span key={p} className="text-gray-400 text-sm px-1">...</span>;
+          return null;
+        }
+        return (
+          <button
+            key={p}
+            onClick={() => onPageChange(p)}
+            className={`w-9 h-9 rounded-lg text-sm font-medium transition-colors ${
+              currentPage === p
+                ? 'bg-primary text-white'
+                : 'border border-gray-200 text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            {p}
+          </button>
+        );
+      })}
+      <button
+        onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+        disabled={currentPage === totalPages}
+        className="w-9 h-9 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+      >
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+        </svg>
+      </button>
+    </div>
+  );
+}
+
 export default function Home() {
   const navigate = useNavigate();
   const [trees, setTrees] = useState([]);
@@ -81,6 +126,11 @@ export default function Home() {
   useClickOutside(locRef, useCallback(() => setLocOpen(false), []));
   useClickOutside(typeRef, useCallback(() => setTypeOpen(false), []));
 
+  const [trendingFull, setTrendingFull] = useState([]);
+  const [trendingFullLoading, setTrendingFullLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('all');
+  const [trendingPage, setTrendingPage] = useState(1);
+
   useEffect(() => {
     fetchFilterOptions().then(setFilterOptions);
   }, []);
@@ -95,8 +145,27 @@ export default function Home() {
       .finally(() => setLoading(false));
   }, [activeType]);
 
+  useEffect(() => {
+    if (activeTab === 'trending' && trendingFull.length === 0 && !trendingFullLoading) {
+      setTrendingFullLoading(true);
+      fetchTrendingTrees(50)
+        .then(setTrendingFull)
+        .catch(() => setTrendingFull([]))
+        .finally(() => setTrendingFullLoading(false));
+    }
+  }, [activeTab]);
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    if (tab === 'all') setPage(1);
+    else setTrendingPage(1);
+  };
+
   const totalPages = Math.ceil(trees.length / perPage);
   const paginatedTrees = trees.slice((page - 1) * perPage, page * perPage);
+
+  const trendingTotalPages = Math.ceil(trendingFull.length / perPage);
+  const paginatedTrending = trendingFull.slice((trendingPage - 1) * perPage, trendingPage * perPage);
 
   const handleNearMe = () => {
     const cached = sessionStorage.getItem('userCoords');
@@ -334,77 +403,97 @@ export default function Home() {
         </div>
       </section>
 
-      {/* All trees */}
+      {/* Tabbed section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex items-center justify-between mb-5">
-          <div>
-            <h2 className="text-xl md:text-2xl font-bold text-gray-900">
-              {activeType ? `${activeType.charAt(0).toUpperCase() + activeType.slice(1)} Trees` : 'All Fruit Trees'}
-            </h2>
-            <p className="text-gray-400 text-sm mt-0.5">{trees.length} trees available for rent</p>
-          </div>
+        {/* Tab bar */}
+        <div className="flex items-center gap-6 border-b border-gray-200 mb-6">
+          <button
+            onClick={() => handleTabChange('all')}
+            className={`pb-3 text-sm font-semibold transition-colors relative ${
+              activeTab === 'all'
+                ? 'text-primary'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            {activeType ? `${activeType.charAt(0).toUpperCase() + activeType.slice(1)} Trees` : 'All Fruit Trees'}
+            <span className="ml-1.5 text-xs font-normal text-gray-400">({trees.length})</span>
+            {activeTab === 'all' && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
+            )}
+          </button>
+          <button
+            onClick={() => handleTabChange('trending')}
+            className={`pb-3 text-sm font-semibold transition-colors relative flex items-center gap-1.5 ${
+              activeTab === 'trending'
+                ? 'text-orange-500'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 23c-3.866 0-7-2.686-7-6 0-1.665.602-3.202 1.604-4.396L12 2l5.396 10.604C18.398 13.798 19 15.335 19 17c0 3.314-3.134 6-7 6zm0-2c2.761 0 5-1.79 5-4 0-1.093-.395-2.1-1.052-2.878L12 6.522l-3.948 7.6C7.395 14.9 7 15.907 7 17c0 2.21 2.239 4 5 4z" />
+            </svg>
+            Trending
+            {trendingFull.length > 0 && (
+              <span className="ml-1 text-xs font-normal text-gray-400">({trendingFull.length})</span>
+            )}
+            {activeTab === 'trending' && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-500 rounded-full" />
+            )}
+          </button>
         </div>
 
-        {loading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="bg-gray-100 rounded-2xl h-72 animate-pulse" />
-            ))}
-          </div>
-        ) : trees.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="text-gray-400 text-lg">No trees available yet.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {paginatedTrees.map((tree) => (
-              <TreeCard key={tree.id} tree={tree} />
-            ))}
-          </div>
+        {/* All Trees tab content */}
+        {activeTab === 'all' && (
+          <>
+            {loading ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="bg-gray-100 rounded-2xl h-72 animate-pulse" />
+                ))}
+              </div>
+            ) : trees.length === 0 ? (
+              <div className="text-center py-16">
+                <p className="text-gray-400 text-lg">No trees available yet.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                {paginatedTrees.map((tree) => (
+                  <TreeCard key={tree.id} tree={tree} />
+                ))}
+              </div>
+            )}
+
+            {!loading && totalPages > 1 && (
+              <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
+            )}
+          </>
         )}
 
-        {/* Pagination */}
-        {!loading && totalPages > 1 && (
-          <div className="flex items-center justify-center gap-2 mt-8">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="w-9 h-9 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-              </svg>
-            </button>
-            {Array.from({ length: totalPages }).map((_, i) => {
-              const p = i + 1;
-              if (totalPages > 7 && Math.abs(p - page) > 2 && p !== 1 && p !== totalPages) {
-                if (p === page - 3 || p === page + 3) return <span key={p} className="text-gray-400 text-sm px-1">...</span>;
-                return null;
-              }
-              return (
-                <button
-                  key={p}
-                  onClick={() => setPage(p)}
-                  className={`w-9 h-9 rounded-lg text-sm font-medium transition-colors ${
-                    page === p
-                      ? 'bg-primary text-white'
-                      : 'border border-gray-200 text-gray-600 hover:bg-gray-50'
-                  }`}
-                >
-                  {p}
-                </button>
-              );
-            })}
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-              className="w-9 h-9 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-              </svg>
-            </button>
-          </div>
+        {/* Trending tab content */}
+        {activeTab === 'trending' && (
+          <>
+            {trendingFullLoading ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="bg-gray-100 rounded-2xl h-72 animate-pulse" />
+                ))}
+              </div>
+            ) : trendingFull.length === 0 ? (
+              <div className="text-center py-16">
+                <p className="text-gray-400 text-lg">No trending trees right now.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                {paginatedTrending.map((tree) => (
+                  <TreeCard key={tree.id} tree={tree} />
+                ))}
+              </div>
+            )}
+
+            {!trendingFullLoading && trendingTotalPages > 1 && (
+              <Pagination currentPage={trendingPage} totalPages={trendingTotalPages} onPageChange={setTrendingPage} />
+            )}
+          </>
         )}
       </section>
     </div>
