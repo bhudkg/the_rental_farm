@@ -5,9 +5,9 @@ import useStore, { DELIVERY_FEE } from '../store/useStore';
 
 const PLACEHOLDER_IMG = 'https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=200&q=60';
 
-export default function CheckoutModal({ onClose, specificItem }) {
+export default function CheckoutModal({ onClose }) {
   const navigate = useNavigate();
-  const { cart, clearCart, removeFromCart } = useStore();
+  const { cart, getCartTotal, clearCart } = useStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [razorpayLoaded, setRazorpayLoaded] = useState(false);
@@ -28,20 +28,19 @@ export default function CheckoutModal({ onClose, specificItem }) {
     };
   }, []);
 
-  const checkoutList = specificItem ? [{ tree: specificItem }] : cart;
+  const total = getCartTotal();
 
-  const seasonSubtotal = checkoutList.reduce(
+  const seasonSubtotal = cart.reduce(
     (sum, item) => sum + (Number(item.tree.price_per_season) || 0),
     0,
   );
-  const deliverySubtotal = checkoutList.length * DELIVERY_FEE;
-  const total = seasonSubtotal + deliverySubtotal;
+  const deliverySubtotal = cart.length * DELIVERY_FEE;
 
   const handleConfirm = async () => {
     setLoading(true);
     setError(null);
 
-    const items = checkoutList.map(({ tree }) => ({
+    const items = cart.map(({ tree }) => ({
       tree_id: tree.id,
     }));
 
@@ -73,11 +72,7 @@ export default function CheckoutModal({ onClose, specificItem }) {
                 order_id: razorpayResponse.razorpay_order_id,
                 signature: razorpayResponse.razorpay_signature,
               });
-              if (specificItem) {
-                removeFromCart(specificItem.id);
-              } else {
-                clearCart();
-              }
+              clearCart();
               navigate(`/payment-success?order_ids=${orderIds.join(',')}`);
             } catch {
               setError('Payment verification failed. Please contact support.');
@@ -120,7 +115,7 @@ export default function CheckoutModal({ onClose, specificItem }) {
             </button>
           </div>
           <p className="text-sm text-white/70">
-            {checkoutList.length} {checkoutList.length === 1 ? 'tree' : 'trees'} in your order
+            {cart.length} {cart.length === 1 ? 'tree' : 'trees'} in your cart
           </p>
         </div>
 
@@ -128,7 +123,7 @@ export default function CheckoutModal({ onClose, specificItem }) {
         <div className="flex-1 overflow-y-auto p-6 space-y-5">
           {/* Cart items */}
           <div className="space-y-3">
-            {checkoutList.map(({ tree }) => {
+            {cart.map(({ tree }) => {
               const img = tree.image_urls?.[0] || tree.image_url || PLACEHOLDER_IMG;
               const price = Number(tree.price_per_season) || 0;
               const itemTotal = price + DELIVERY_FEE;
@@ -188,7 +183,7 @@ export default function CheckoutModal({ onClose, specificItem }) {
           </button>
           <button
             onClick={handleConfirm}
-            disabled={loading || checkoutList.length === 0}
+            disabled={loading || cart.length === 0}
             className="flex-1 px-4 py-3 bg-linear-to-r from-primary to-emerald-600 text-white rounded-xl text-sm font-semibold hover:brightness-105 transition-all disabled:opacity-50 shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
           >
             {loading ? (
