@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { login, register } from '../services/api';
+import { GoogleLogin } from '@react-oauth/google';
+import { googleLogin, login, register } from '../services/api';
 import useStore from '../store/useStore';
 
 export default function Login() {
@@ -36,6 +37,20 @@ export default function Login() {
       navigate('/');
     } catch (err) {
       setError(err.response?.data?.detail || 'Something went wrong');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    setError(null);
+    setLoading(true);
+    try {
+      const data = await googleLogin(credentialResponse.credential);
+      loginUser(data.access_token, data.user);
+      navigate('/');
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Google sign-in failed');
     } finally {
       setLoading(false);
     }
@@ -133,6 +148,25 @@ export default function Login() {
               ? 'Create Account'
               : 'Sign In'}
           </button>
+
+          <div className="relative my-2">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="bg-white px-3 text-gray-400">or</span>
+            </div>
+          </div>
+
+          <div className="flex justify-center">
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() => setError('Google sign-in failed')}
+              text={isRegister ? 'signup_with' : 'signin_with'}
+              shape="rectangular"
+              width="100%"
+            />
+          </div>
         </form>
 
         <p className="text-center text-sm text-gray-500 mt-4">

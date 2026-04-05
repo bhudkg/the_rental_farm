@@ -6,7 +6,11 @@ bcrypt==5.0.0
 click==8.3.1
 dnspython==2.8.0
 email-validator==2.3.0
+cachetools==5.5.2
+certifi==2025.4.26
+charset-normalizer==3.4.2
 fastapi==0.135.2
+google-auth==2.40.1
 h11==0.16.0
 httptools==0.7.1
 idna==3.11
@@ -15,10 +19,15 @@ markupsafe==3.0.3
 psycopg2-binary==2.9.11
 pydantic==2.12.5
 pydantic-core==2.41.5
+pyasn1==0.6.1
+pyasn1-modules==0.4.2
 pyjwt==2.12.1
 python-dotenv==1.2.2
 pyyaml==6.0.3
 razorpay==1.4.2
+requests==2.32.3
+rsa==4.9
+urllib3==2.4.0
 stripe==7.9.0
 sqlalchemy==2.0.48
 starlette==1.0.0

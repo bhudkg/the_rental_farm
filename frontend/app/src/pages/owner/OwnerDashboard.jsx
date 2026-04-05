@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { fetchOwnerStats, fetchOwnerOrders } from '../../services/api';
+import { fetchOwnerStats, fetchOwnerOrders, markOrderDelivered } from '../../services/api';
 
 const STATUS_STYLES = {
   pending: 'bg-yellow-100 text-yellow-700',
   confirmed: 'bg-blue-100 text-blue-700',
   active: 'bg-green-100 text-green-700',
+  delivered: 'bg-emerald-100 text-emerald-700',
   completed: 'bg-gray-100 text-gray-600',
   cancelled: 'bg-red-100 text-red-600',
 };
@@ -118,38 +119,69 @@ export default function OwnerDashboard() {
         ) : (
           <div className="space-y-3">
             {orders.map((order) => (
-              <div
-                key={order.id}
-                className="flex items-center gap-4 p-4 bg-white border border-gray-100 rounded-xl"
-              >
-                {order.tree && (
-                  <img
-                    src={order.tree.image_urls?.[0] || order.tree.image_url}
-                    alt={order.tree.name}
-                    className="w-12 h-12 rounded-lg object-cover shrink-0"
-                  />
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-gray-900 truncate">{order.tree?.name}</p>
-                  <p className="text-xs text-gray-500">
-                    {new Date(order.created_at).toLocaleDateString('en-IN', {
-                      day: 'numeric', month: 'short', year: 'numeric',
-                    })}
-                  </p>
-                </div>
-                <span
-                  className={`text-xs font-semibold px-2.5 py-0.5 rounded-full capitalize ${
-                    STATUS_STYLES[order.status] || 'bg-gray-100'
-                  }`}
-                >
-                  {order.status}
-                </span>
-                <span className="font-bold text-gray-900">₹{order.total_price.toFixed(2)}</span>
-              </div>
+              <OrderRow key={order.id} order={order} onDelivered={(updatedOrder) => {
+                setOrders((prev) => prev.map((o) => o.id === updatedOrder.id ? updatedOrder : o));
+              }} />
             ))}
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+
+function OrderRow({ order, onDelivered }) {
+  const [delivering, setDelivering] = useState(false);
+
+  const handleDeliver = async (e) => {
+    e.stopPropagation();
+    if (delivering) return;
+    setDelivering(true);
+    try {
+      const updated = await markOrderDelivered(order.id);
+      onDelivered(updated);
+    } catch {
+      // silently fail — button stays
+    } finally {
+      setDelivering(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-4 p-4 bg-white border border-gray-100 rounded-xl">
+      {order.tree && (
+        <img
+          src={order.tree.image_urls?.[0] || order.tree.image_url}
+          alt={order.tree.name}
+          className="w-12 h-12 rounded-lg object-cover shrink-0"
+        />
+      )}
+      <div className="flex-1 min-w-0">
+        <p className="font-medium text-gray-900 truncate">{order.tree?.name}</p>
+        <p className="text-xs text-gray-500">
+          {new Date(order.created_at).toLocaleDateString('en-IN', {
+            day: 'numeric', month: 'short', year: 'numeric',
+          })}
+        </p>
+      </div>
+      <span
+        className={`text-xs font-semibold px-2.5 py-0.5 rounded-full capitalize ${
+          STATUS_STYLES[order.status] || 'bg-gray-100'
+        }`}
+      >
+        {order.status}
+      </span>
+      {order.status === 'confirmed' && (
+        <button
+          onClick={handleDeliver}
+          disabled={delivering}
+          className="text-xs font-semibold px-3 py-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 shrink-0"
+        >
+          {delivering ? 'Marking...' : 'Mark Delivered'}
+        </button>
+      )}
+      <span className="font-bold text-gray-900 shrink-0">₹{order.total_price.toFixed(2)}</span>
     </div>
   );
 }

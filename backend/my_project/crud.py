@@ -4,7 +4,7 @@ import uuid
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from models import Order, Tree, User, Wishlist
+from models import Order, OwnerRating, Tree, TreeTrendingScore, User, Wishlist
 
 _EARTH_RADIUS_KM = 6371.0
 
@@ -28,6 +28,21 @@ def _bbox_bounds(lat: float, lng: float, radius_km: float):
     delta_lat = radius_km / 111.0
     delta_lng = radius_km / (111.0 * math.cos(math.radians(lat)))
     return lat - delta_lat, lat + delta_lat, lng - delta_lng, lng + delta_lng
+
+
+def _annotate_trending(trees: list[Tree], db: Session):
+    """Attach trending_score to each tree in-place."""
+    if not trees:
+        return
+    tree_ids = [t.id for t in trees]
+    rows = (
+        db.query(TreeTrendingScore.tree_id, TreeTrendingScore.score)
+        .filter(TreeTrendingScore.tree_id.in_(tree_ids))
+        .all()
+    )
+    score_map = {tid: score for tid, score in rows}
+    for tree in trees:
+        tree.trending_score = score_map.get(tree.id, 0.0)
 
 
 def _annotate_wishlist(trees: list[Tree], db: Session, current_user_id: uuid.UUID | None = None):
@@ -55,6 +70,35 @@ def _annotate_wishlist(trees: list[Tree], db: Session, current_user_id: uuid.UUI
     for tree in trees:
         tree.wishlist_count = count_map.get(tree.id, 0)
         tree.is_wishlisted = tree.id in wishlisted_set
+
+
+def _annotate_owner_rating(trees: list[Tree], db: Session):
+    """Attach owner_avg_rating and owner_rating_count to each tree in-place."""
+    if not trees:
+        return
+    owner_ids = list({t.owner_id for t in trees if t.owner_id is not None})
+    if not owner_ids:
+        for tree in trees:
+            tree.owner_avg_rating = None
+            tree.owner_rating_count = 0
+        return
+    rows = (
+        db.query(
+            OwnerRating.owner_id,
+            func.avg(OwnerRating.rating),
+            func.count(OwnerRating.id),
+        )
+        .filter(OwnerRating.owner_id.in_(owner_ids))
+        .group_by(OwnerRating.owner_id)
+        .all()
+    )
+    rating_map = {oid: (round(float(avg), 1), cnt) for oid, avg, cnt in rows}
+    for tree in trees:
+        if tree.owner_id and tree.owner_id in rating_map:
+            tree.owner_avg_rating, tree.owner_rating_count = rating_map[tree.owner_id]
+        else:
+            tree.owner_avg_rating = None
+            tree.owner_rating_count = 0
 
 
 # ── Trees ──
@@ -118,7 +162,10 @@ def get_trees(
         dist_filter = _haversine_expr(lat, lng)
         q = q.filter(dist_filter <= effective_radius)
 
-        if sort_by == "price_low":
+        if sort_by == "trending":
+            q = q.outerjoin(TreeTrendingScore, Tree.id == TreeTrendingScore.tree_id)
+            q = q.order_by(func.coalesce(TreeTrendingScore.score, 0).desc())
+        elif sort_by == "price_low":
             q = q.order_by(Tree.price_per_season.asc())
         elif sort_by == "price_high":
             q = q.order_by(Tree.price_per_season.desc())
@@ -135,9 +182,14 @@ def get_trees(
             tree.distance_km = round(distance, 1)
             trees.append(tree)
         _annotate_wishlist(trees, db, current_user_id)
+        _annotate_trending(trees, db)
+        _annotate_owner_rating(trees, db)
         return trees
 
-    if sort_by == "price_low":
+    if sort_by == "trending":
+        q = q.outerjoin(TreeTrendingScore, Tree.id == TreeTrendingScore.tree_id)
+        q = q.order_by(func.coalesce(TreeTrendingScore.score, 0).desc())
+    elif sort_by == "price_low":
         q = q.order_by(Tree.price_per_season.asc())
     elif sort_by == "price_high":
         q = q.order_by(Tree.price_per_season.desc())
@@ -150,6 +202,8 @@ def get_trees(
 
     trees = q.offset(skip).limit(limit).all()
     _annotate_wishlist(trees, db, current_user_id)
+    _annotate_trending(trees, db)
+    _annotate_owner_rating(trees, db)
     return trees
 
 
@@ -161,6 +215,8 @@ def get_tree(db: Session, tree_id: uuid.UUID, load_owner: bool = False, current_
     tree = q.filter(Tree.id == tree_id).first()
     if tree:
         _annotate_wishlist([tree], db, current_user_id)
+        _annotate_trending([tree], db)
+        _annotate_owner_rating([tree], db)
     return tree
 
 
@@ -270,3 +326,22 @@ def get_wishlist_for_user(db: Session, user_id: uuid.UUID) -> list[Tree]:
 
 def get_wishlist_count(db: Session, tree_id: uuid.UUID) -> int:
     return db.query(func.count(Wishlist.id)).filter(Wishlist.tree_id == tree_id).scalar() or 0
+
+
+# ── Trending ──
+
+def get_trending_trees(db: Session, limit: int = 12, current_user_id: uuid.UUID | None = None) -> list[Tree]:
+    rows = (
+        db.query(Tree, TreeTrendingScore.score)
+        .join(TreeTrendingScore, Tree.id == TreeTrendingScore.tree_id)
+        .order_by(TreeTrendingScore.score.desc())
+        .limit(limit)
+        .all()
+    )
+    trees = []
+    for tree, score in rows:
+        tree.trending_score = round(score, 4)
+        trees.append(tree)
+    _annotate_wishlist(trees, db, current_user_id)
+    _annotate_owner_rating(trees, db)
+    return trees

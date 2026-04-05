@@ -7,8 +7,9 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from database import Base, SessionLocal, engine, get_db
-from routes import auth, images, orders, owner, trees, webhooks, wishlist
+from routes import auth, images, orders, owner, ratings, trees, webhooks, wishlist
 from seed import seed_trees
+from trending import recompute_trending_scores
 
 import models  # noqa: F401 — ensures models are registered with Base
 
@@ -19,6 +20,7 @@ async def lifespan(app: FastAPI):
     db = SessionLocal()
     try:
         seed_trees(db)
+        recompute_trending_scores(db)
     finally:
         db.close()
     yield
@@ -41,6 +43,7 @@ app.include_router(owner.router)
 app.include_router(images.router)
 app.include_router(webhooks.router)
 app.include_router(wishlist.router)
+app.include_router(ratings.router)
 
 
 @app.get("/")
@@ -64,3 +67,9 @@ async def root():
 def health_check(db: Session = Depends(get_db)):
     db.execute(text("SELECT 1"))
     return {"status": "healthy", "database": "connected"}
+
+
+@app.post("/api/admin/recompute-trending")
+def trigger_recompute_trending(db: Session = Depends(get_db)):
+    count = recompute_trending_scores(db)
+    return {"status": "ok", "trees_scored": count}

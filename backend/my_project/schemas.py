@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, EmailStr, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 
 # ── User ──
@@ -30,6 +30,10 @@ class Token(BaseModel):
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
+
+
+class GoogleLoginRequest(BaseModel):
+    id_token: str
 
 
 # ── Tree ──
@@ -92,6 +96,9 @@ class TreeOut(TreeBase):
     distance_km: float | None = None
     wishlist_count: int = 0
     is_wishlisted: bool = False
+    trending_score: float = 0.0
+    owner_avg_rating: float | None = None
+    owner_rating_count: int = 0
 
     model_config = {"from_attributes": True}
 
@@ -100,6 +107,8 @@ class OwnerInfo(BaseModel):
     id: uuid.UUID
     name: str
     created_at: datetime
+    avg_rating: float | None = None
+    rating_count: int = 0
 
     model_config = {"from_attributes": True}
 
@@ -169,3 +178,31 @@ class PaymentVerifyRequest(BaseModel):
 class PaymentStatusOut(BaseModel):
     payment_status: str
     order_status: str
+
+
+# ── Ratings ──
+
+class OwnerRatingCreate(BaseModel):
+    order_id: uuid.UUID
+    rating: int = Field(..., ge=1, le=5)
+    review: str | None = None
+
+
+class OwnerRatingOut(BaseModel):
+    id: uuid.UUID
+    user_id: uuid.UUID
+    owner_id: uuid.UUID
+    order_id: uuid.UUID
+    rating: int
+    review: str | None = None
+    created_at: datetime
+    user_name: str | None = None
+
+    model_config = {"from_attributes": True}
+
+
+class CanRateOut(BaseModel):
+    can_rate: bool
+    owner_id: uuid.UUID | None = None
+    owner_name: str | None = None
+    already_rated: bool = False

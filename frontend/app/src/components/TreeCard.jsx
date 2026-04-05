@@ -102,6 +102,39 @@ function WishlistButton({ tree, className = '' }) {
   );
 }
 
+function OwnerRatingBadge({ tree }) {
+  const hasRating = tree.owner_avg_rating != null && tree.owner_avg_rating > 0;
+  return (
+    <span className="inline-flex items-center gap-0.5 text-[11px] text-gray-600">
+      <svg className={`w-3.5 h-3.5 ${hasRating ? 'text-amber-400 fill-amber-400' : 'text-gray-300 fill-gray-300'}`} viewBox="0 0 20 20">
+        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+      </svg>
+      {hasRating ? (
+        <>
+          <span className="font-semibold">{tree.owner_avg_rating}</span>
+          <span className="text-gray-400">({tree.owner_rating_count})</span>
+        </>
+      ) : (
+        <span className="text-gray-400">New</span>
+      )}
+    </span>
+  );
+}
+
+const TRENDING_THRESHOLD = 5.0;
+
+function TrendingBadge({ tree }) {
+  if (!tree.trending_score || tree.trending_score < TRENDING_THRESHOLD) return null;
+  return (
+    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-orange-500/90 backdrop-blur-sm text-white text-[9px] font-bold shadow-sm">
+      <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 23c-3.866 0-7-2.686-7-6 0-1.665.602-3.202 1.604-4.396L12 2l5.396 10.604C18.398 13.798 19 15.335 19 17c0 3.314-3.134 6-7 6z" />
+      </svg>
+      Trending
+    </span>
+  );
+}
+
 // ─── Option A: Airbnb-style (Clean & Minimal) ───────────────────────────────
 
 export function TreeCardA({ tree }) {
@@ -145,6 +178,8 @@ export function TreeCardA({ tree }) {
         )}
 
         <div className="flex flex-wrap items-center gap-1.5 mt-2">
+          <OwnerRatingBadge tree={tree} />
+          <TrendingBadge tree={tree} />
           {season && (
             <span className="text-[10px] font-medium text-gray-600 bg-orange-50 px-1.5 py-0.5 rounded-md">
               {season}
@@ -211,6 +246,8 @@ export function TreeCardB({ tree }) {
           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full capitalize ${TYPE_COLORS[tree.type] || 'bg-gray-100 text-gray-600'}`}>
             {tree.type}
           </span>
+          <TrendingBadge tree={tree} />
+          <OwnerRatingBadge tree={tree} />
           {tree.variety && (
             <span className="text-[10px] text-gray-400 font-medium truncate">{tree.variety}</span>
           )}
@@ -321,6 +358,8 @@ export function TreeCardC({ tree }) {
           <h3 className="text-sm font-bold text-gray-900 group-hover:text-primary transition-colors line-clamp-1">
             {tree.name}
           </h3>
+          <TrendingBadge tree={tree} />
+          <OwnerRatingBadge tree={tree} />
           {tree.variety && (
             <span className="text-[11px] text-gray-400 shrink-0">&middot; {tree.variety}</span>
           )}

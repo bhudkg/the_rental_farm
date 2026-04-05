@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { fetchOrder } from '../services/api';
+import { fetchOrder, checkCanRate, submitRating } from '../services/api';
 
 const STATUS_STYLES = {
   pending: 'bg-yellow-100 text-yellow-700',
   confirmed: 'bg-blue-100 text-blue-700',
   active: 'bg-green-100 text-green-700',
+  delivered: 'bg-emerald-100 text-emerald-700',
   completed: 'bg-gray-100 text-gray-600',
   cancelled: 'bg-red-100 text-red-600',
 };
@@ -112,6 +113,8 @@ export default function OrderDetail() {
         </div>
       </div>
 
+      {order.status === 'delivered' && <RatingSection orderId={order.id} />}
+
       <div className="mt-8 text-center">
         <Link
           to="/trees"
@@ -120,6 +123,129 @@ export default function OrderDetail() {
           Rent Another Tree
         </Link>
       </div>
+    </div>
+  );
+}
+
+
+function RatingSection({ orderId }) {
+  const [rateInfo, setRateInfo] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [selectedRating, setSelectedRating] = useState(0);
+  const [hoveredRating, setHoveredRating] = useState(0);
+  const [review, setReview] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    checkCanRate(orderId)
+      .then(setRateInfo)
+      .catch(() => setRateInfo(null))
+      .finally(() => setLoading(false));
+  }, [orderId]);
+
+  const handleSubmit = async () => {
+    if (selectedRating === 0) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      await submitRating({
+        order_id: orderId,
+        rating: selectedRating,
+        review: review.trim() || null,
+      });
+      setSubmitted(true);
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to submit rating');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (loading) return null;
+  if (!rateInfo) return null;
+
+  if (rateInfo.already_rated) {
+    return (
+      <div className="mt-8 bg-gray-50 rounded-2xl p-6 text-center">
+        <svg className="w-8 h-8 text-amber-400 mx-auto mb-2" viewBox="0 0 20 20" fill="currentColor">
+          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+        </svg>
+        <p className="text-sm text-gray-500">You have already rated this order. Thank you!</p>
+      </div>
+    );
+  }
+
+  if (!rateInfo.can_rate) return null;
+
+  if (submitted) {
+    return (
+      <div className="mt-8 bg-emerald-50 border border-emerald-200 rounded-2xl p-6 text-center">
+        <svg className="w-10 h-10 text-emerald-500 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <p className="text-sm font-semibold text-emerald-800">Thank you for your rating!</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-8 bg-gray-50 rounded-2xl p-6">
+      <h3 className="text-base font-semibold text-gray-900 mb-1">
+        Rate {rateInfo.owner_name || 'the owner'}
+      </h3>
+      <p className="text-sm text-gray-500 mb-4">How was your experience with this tree rental?</p>
+
+      <div className="flex items-center gap-1 mb-4">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <button
+            key={star}
+            type="button"
+            onClick={() => setSelectedRating(star)}
+            onMouseEnter={() => setHoveredRating(star)}
+            onMouseLeave={() => setHoveredRating(0)}
+            className="p-0.5 transition-transform hover:scale-110"
+          >
+            <svg
+              className={`w-8 h-8 transition-colors ${
+                star <= (hoveredRating || selectedRating)
+                  ? 'text-amber-400 fill-amber-400'
+                  : 'text-gray-300 fill-gray-300'
+              }`}
+              viewBox="0 0 20 20"
+            >
+              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+            </svg>
+          </button>
+        ))}
+        {selectedRating > 0 && (
+          <span className="ml-2 text-sm font-medium text-gray-600">
+            {['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'][selectedRating]}
+          </span>
+        )}
+      </div>
+
+      <textarea
+        value={review}
+        onChange={(e) => setReview(e.target.value)}
+        placeholder="Write a review (optional)"
+        rows={3}
+        maxLength={1000}
+        className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-none mb-4"
+      />
+
+      {error && (
+        <p className="text-sm text-red-600 mb-3">{error}</p>
+      )}
+
+      <button
+        onClick={handleSubmit}
+        disabled={selectedRating === 0 || submitting}
+        className="px-6 py-2.5 bg-primary text-white font-medium rounded-xl hover:bg-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {submitting ? 'Submitting...' : 'Submit Rating'}
+      </button>
     </div>
   );
 }
