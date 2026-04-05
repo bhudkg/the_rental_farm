@@ -56,9 +56,8 @@ export default function OrderDetail() {
       <div className="flex items-center gap-3 mb-8">
         <h1 className="text-2xl font-bold text-gray-900">Order Confirmation</h1>
         <span
-          className={`text-sm font-semibold px-3 py-1 rounded-full capitalize ${
-            STATUS_STYLES[order.status] || 'bg-gray-100'
-          }`}
+          className={`text-sm font-semibold px-3 py-1 rounded-full capitalize ${STATUS_STYLES[order.status] || 'bg-gray-100'
+            }`}
         >
           {order.status}
         </span>
@@ -102,6 +101,12 @@ export default function OrderDetail() {
             {new Date(order.created_at).toLocaleDateString('en-IN', {
               day: 'numeric', month: 'short', year: 'numeric',
             })}
+          </span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-500">Payment Method</span>
+          <span className="font-medium capitalize">
+            {order.payment_method || order.payment_gateway || 'Online'}
           </span>
         </div>
         <hr className="border-gray-200" />
