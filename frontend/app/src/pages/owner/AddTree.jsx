@@ -2,7 +2,9 @@ import { useCallback, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import ImageUploader from '../../components/ImageUploader';
 import LocationPicker from '../../components/LocationPicker';
+import OwnerOnboardingForm from '../../components/OwnerOnboardingForm';
 import { createTree } from '../../services/api';
+import useStore from '../../store/useStore';
 
 const TYPES = ['mango', 'banana', 'orange', 'lemon', 'coconut', 'guava', 'grapes', 'apple', 'papaya', 'pomegranate', 'jackfruit', 'chiku'];
 const SIZES = ['Small (1-2 ft)', 'Medium (3-4 ft)', 'Large (5-6 ft)', 'Extra Large (7-8 ft)'];
@@ -76,36 +78,18 @@ function CheckCircleIcon({ className }) {
   );
 }
 
-function SectionCard({ stepIndex, icon: Icon, title, subtitle, children, completed }) {
-  return (
-    <div className={`relative bg-white rounded-2xl border transition-all duration-200 ${completed ? 'border-primary/30 shadow-sm shadow-primary/5' : 'border-gray-200 shadow-sm'}`}>
-      <div className="flex items-center gap-3.5 px-5 py-4 border-b border-gray-100">
-        <div className={`flex items-center justify-center w-9 h-9 rounded-xl ${completed ? 'bg-primary/10' : 'bg-gray-100'} transition-colors`}>
-          {completed
-            ? <CheckCircleIcon className="w-5 h-5 text-primary" />
-            : <Icon className={`w-5 h-5 ${completed ? 'text-primary' : 'text-gray-400'}`} />
-          }
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] font-bold text-gray-300 uppercase tracking-wider">Step {stepIndex + 1}</span>
-            {completed && <span className="text-[10px] font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">Done</span>}
-          </div>
-          <h3 className="text-sm font-semibold text-gray-800">{title}</h3>
-        </div>
-      </div>
-      <div className="px-5 py-5 space-y-4">
-        {subtitle && <p className="text-xs text-gray-400 -mt-1">{subtitle}</p>}
-        {children}
-      </div>
-    </div>
-  );
-}
-
 export default function AddTree() {
   const navigate = useNavigate();
+  const user = useStore((s) => s.user);
+  const [onboardingDone, setOnboardingDone] = useState(!!user?.has_owner_profile);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [slideDirection, setSlideDirection] = useState('right');
+
+  if (!onboardingDone) {
+    return <OwnerOnboardingForm onComplete={() => setOnboardingDone(true)} />;
+  }
 
   const [form, setForm] = useState({
     name: '',
@@ -136,7 +120,9 @@ export default function AddTree() {
   }), [form]);
 
   const completedCount = Object.values(completedSteps).filter(Boolean).length;
-  const progressPct = Math.round((completedCount / STEPS.length) * 100);
+  const progressPct = ((currentStep + 1) / STEPS.length) * 100;
+  const isLastStep = currentStep === STEPS.length - 1;
+  const isFirstStep = currentStep === 0;
 
   const update = (field) => (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }));
 
@@ -152,6 +138,86 @@ export default function AddTree() {
       location: area || prev.location,
     }));
   }, []);
+
+  const validateStep = (stepIndex) => {
+    const stepKey = STEPS[stepIndex].key;
+    switch (stepKey) {
+      case 'images':
+        if (form.image_urls.length < MIN_IMAGES) {
+          setError(`Please upload at least ${MIN_IMAGES} photos before continuing.`);
+          return false;
+        }
+        break;
+      case 'basic':
+        if (!form.name.trim()) {
+          setError('Please enter a tree name.');
+          return false;
+        }
+        if (!form.type) {
+          setError('Please select a fruit type.');
+          return false;
+        }
+        break;
+      case 'location':
+        if (!form.city.trim()) {
+          setError('Please enter the city.');
+          return false;
+        }
+        if (!form.state) {
+          setError('Please select the state.');
+          return false;
+        }
+        break;
+      case 'pricing':
+        if (!form.season_start) {
+          setError('Please select a season start month.');
+          return false;
+        }
+        if (!form.season_end) {
+          setError('Please select a season end month.');
+          return false;
+        }
+        if (!form.price_per_season) {
+          setError('Please enter the price per season.');
+          return false;
+        }
+        break;
+      default:
+        break;
+    }
+    setError(null);
+    return true;
+  };
+
+  const goNext = () => {
+    if (!validateStep(currentStep)) return;
+    setSlideDirection('right');
+    setCurrentStep((s) => Math.min(s + 1, STEPS.length - 1));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const goBack = () => {
+    setError(null);
+    setSlideDirection('left');
+    setCurrentStep((s) => Math.max(s - 1, 0));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const goToStep = (index) => {
+    if (index < currentStep) {
+      setError(null);
+      setSlideDirection('left');
+      setCurrentStep(index);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    for (let i = currentStep; i < index; i++) {
+      if (!validateStep(i)) return;
+    }
+    setSlideDirection('right');
+    setCurrentStep(index);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -198,6 +264,232 @@ export default function AddTree() {
   const labelClass = 'block text-sm font-medium text-gray-600 mb-1.5';
   const selectClass = `${inputClass} bg-white appearance-none cursor-pointer`;
 
+  const stepContent = {
+    images: (
+      <div className="space-y-4">
+        <p className="text-sm text-gray-500">Upload at least {MIN_IMAGES} clear photos. The first image will be the cover.</p>
+        <ImageUploader
+          value={form.image_urls}
+          onChange={(updater) =>
+            setForm((prev) => ({
+              ...prev,
+              image_urls: typeof updater === 'function' ? updater(prev.image_urls) : updater,
+            }))
+          }
+          minCount={MIN_IMAGES}
+        />
+      </div>
+    ),
+    basic: (
+      <div className="space-y-4">
+        <div>
+          <label className={labelClass}>Tree Name <span className="text-red-400">*</span></label>
+          <input
+            type="text"
+            value={form.name}
+            onChange={update('name')}
+            placeholder="e.g. Alphonso Mango Tree"
+            className={inputClass}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className={labelClass}>Fruit Type <span className="text-red-400">*</span></label>
+            <select value={form.type} onChange={update('type')} className={selectClass}>
+              {TYPES.map((t) => (
+                <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className={labelClass}>Variety</label>
+            <input
+              type="text"
+              value={form.variety}
+              onChange={update('variety')}
+              placeholder="e.g. Alphonso (Hapus)"
+              className={inputClass}
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className={labelClass}>Description</label>
+          <textarea
+            rows={3}
+            value={form.description}
+            onChange={update('description')}
+            placeholder="Tell renters about your tree — age, health, expected yield..."
+            className={`${inputClass} resize-none`}
+          />
+        </div>
+      </div>
+    ),
+    location: (
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label className={labelClass}>Local Area</label>
+            <input
+              type="text"
+              value={form.location}
+              onChange={update('location')}
+              placeholder="Farm / Area name"
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className={labelClass}>City <span className="text-red-400">*</span></label>
+            <input
+              type="text"
+              value={form.city}
+              onChange={update('city')}
+              placeholder="Nearest city"
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className={labelClass}>State <span className="text-red-400">*</span></label>
+            <select value={form.state} onChange={update('state')} className={selectClass}>
+              <option value="">Select state</option>
+              {INDIAN_STATES.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <LocationPicker
+          city={form.city}
+          state={form.state}
+          latitude={form.latitude}
+          longitude={form.longitude}
+          onChange={handleLocationChange}
+          onAddressChange={handleAddressChange}
+        />
+      </div>
+    ),
+    pricing: (
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className={labelClass}>Season Start <span className="text-red-400">*</span></label>
+            <select value={form.season_start} onChange={update('season_start')} className={selectClass}>
+              <option value="">Select month</option>
+              {MONTHS.map((m, i) => (
+                <option key={m} value={i + 1}>{m}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className={labelClass}>Season End <span className="text-red-400">*</span></label>
+            <select value={form.season_end} onChange={update('season_end')} className={selectClass}>
+              <option value="">Select month</option>
+              {MONTHS.map((m, i) => (
+                <option key={m} value={i + 1}>{m}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {form.season_start && form.season_end && (
+          <div className="flex items-center gap-2 text-xs bg-primary/5 border border-primary/10 rounded-xl px-4 py-2.5">
+            <svg className="w-4 h-4 text-primary shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+            </svg>
+            <span className="text-gray-600">
+              Season: <span className="font-semibold text-gray-800">{MONTHS[form.season_start - 1]}</span>
+              {' '}&rarr;{' '}
+              <span className="font-semibold text-gray-800">{MONTHS[form.season_end - 1]}</span>
+            </span>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className={labelClass}>Price per Season <span className="text-red-400">*</span></label>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-gray-400 font-medium">₹</span>
+              <input
+                type="number"
+                step="0.01"
+                value={form.price_per_season}
+                onChange={update('price_per_season')}
+                placeholder="4,500"
+                className={`${inputClass} pl-8`}
+              />
+            </div>
+          </div>
+          <div>
+            <label className={labelClass}>Price with Delivery</label>
+            <div className="flex items-center gap-2 px-4 py-2.5 bg-emerald-50 border border-emerald-100 rounded-xl">
+              <span className="text-sm font-semibold text-emerald-700">
+                {form.price_per_season
+                  ? `₹${(parseFloat(form.price_per_season) + 1000).toLocaleString('en-IN')}`
+                  : '—'}
+              </span>
+            </div>
+            <p className="text-[11px] text-gray-400 mt-1.5 ml-1">Season price + ₹1,000 delivery</p>
+          </div>
+        </div>
+      </div>
+    ),
+    details: (
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className={labelClass}>Age of Tree (years)</label>
+            <input
+              type="number"
+              min="0"
+              value={form.age}
+              onChange={update('age')}
+              placeholder="e.g. 12"
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className={labelClass}>Previous Year Yield (kg)</label>
+            <input
+              type="number"
+              min="0"
+              step="0.1"
+              value={form.previous_year_yield}
+              onChange={update('previous_year_yield')}
+              placeholder="e.g. 120"
+              className={inputClass}
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className={labelClass}>Min Yield Guarantee (kg/season)</label>
+            <input
+              type="number"
+              min="1"
+              value={form.min_quantity}
+              onChange={update('min_quantity')}
+              placeholder="e.g. 50"
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className={labelClass}>Size</label>
+            <select value={form.size} onChange={update('size')} className={selectClass}>
+              {SIZES.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
+    ),
+  };
+
+  const activeStep = STEPS[currentStep];
+  const ActiveIcon = activeStep.icon;
+
   return (
     <div className="min-h-screen bg-linear-to-b from-gray-50 to-white">
       {/* Header banner */}
@@ -217,286 +509,95 @@ export default function AddTree() {
         </div>
       </div>
 
-      {/* Progress bar */}
+      {/* Step indicator */}
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8">
         <div className="bg-white rounded-2xl shadow-lg shadow-gray-200/60 border border-gray-100 p-4 sm:p-5">
+          {/* Progress bar */}
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-gray-500">Progress</span>
+            <span className="text-xs font-semibold text-gray-500">Step {currentStep + 1} of {STEPS.length}</span>
             <span className="text-xs font-bold text-primary">{completedCount}/{STEPS.length} completed</span>
           </div>
-          <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+          <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden mb-4">
             <div
               className="h-full bg-linear-to-r from-primary to-emerald-400 rounded-full transition-all duration-500 ease-out"
               style={{ width: `${progressPct}%` }}
             />
           </div>
-          <div className="hidden sm:grid grid-cols-5 gap-1 mt-3">
+
+          {/* Clickable step pills */}
+          <div className="flex items-center gap-1 sm:gap-2">
             {STEPS.map((step, i) => {
               const done = completedSteps[step.key];
+              const active = i === currentStep;
+              const StepIcon = step.icon;
               return (
-                <div key={step.key} className="flex items-center gap-1.5 text-[11px]">
-                  <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${done ? 'bg-primary' : 'bg-gray-300'}`} />
-                  <span className={done ? 'text-primary font-medium' : 'text-gray-400'}>{step.label}</span>
-                </div>
+                <button
+                  key={step.key}
+                  type="button"
+                  onClick={() => goToStep(i)}
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-1 sm:px-3 rounded-xl text-[11px] sm:text-xs font-medium transition-all duration-200 ${
+                    active
+                      ? 'bg-primary text-white shadow-md shadow-primary/20'
+                      : done
+                        ? 'bg-primary/10 text-primary hover:bg-primary/15'
+                        : 'bg-gray-50 text-gray-400 hover:bg-gray-100'
+                  }`}
+                >
+                  {done && !active ? (
+                    <CheckCircleIcon className="w-3.5 h-3.5 shrink-0" />
+                  ) : (
+                    <StepIcon className="w-3.5 h-3.5 shrink-0" />
+                  )}
+                  <span className="hidden sm:inline truncate">{step.label}</span>
+                </button>
               );
             })}
           </div>
         </div>
       </div>
 
-      {/* Form */}
-      <form onSubmit={handleSubmit} className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
-        {/* 1. Images */}
-        <SectionCard
-          stepIndex={0}
-          icon={CameraIcon}
-          title="Tree Photos"
-          subtitle={`Upload at least ${MIN_IMAGES} clear photos. The first image will be the cover.`}
-          completed={completedSteps.images}
+      {/* Active step content */}
+      <form onSubmit={handleSubmit} className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div
+          key={currentStep}
+          className={`animate-fade-slide-${slideDirection}`}
         >
-          <ImageUploader
-            value={form.image_urls}
-            onChange={(updater) =>
-              setForm((prev) => ({
-                ...prev,
-                image_urls: typeof updater === 'function' ? updater(prev.image_urls) : updater,
-              }))
-            }
-            minCount={MIN_IMAGES}
-          />
-        </SectionCard>
-
-        {/* 2. Basic Info */}
-        <SectionCard
-          stepIndex={1}
-          icon={TreeIcon}
-          title="Basic Information"
-          completed={completedSteps.basic}
-        >
-          <div>
-            <label className={labelClass}>Tree Name <span className="text-red-400">*</span></label>
-            <input
-              type="text"
-              required
-              value={form.name}
-              onChange={update('name')}
-              placeholder="e.g. Alphonso Mango Tree"
-              className={inputClass}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className={labelClass}>Fruit Type <span className="text-red-400">*</span></label>
-              <select value={form.type} onChange={update('type')} className={selectClass}>
-                {TYPES.map((t) => (
-                  <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className={labelClass}>Variety</label>
-              <input
-                type="text"
-                value={form.variety}
-                onChange={update('variety')}
-                placeholder="e.g. Alphonso (Hapus)"
-                className={inputClass}
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className={labelClass}>Description</label>
-            <textarea
-              rows={3}
-              value={form.description}
-              onChange={update('description')}
-              placeholder="Tell renters about your tree — age, health, expected yield..."
-              className={`${inputClass} resize-none`}
-            />
-          </div>
-        </SectionCard>
-
-        {/* 3. Location */}
-        <SectionCard
-          stepIndex={2}
-          icon={MapPinIcon}
-          title="Location"
-          completed={completedSteps.location}
-        >
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label className={labelClass}>Local Area</label>
-              <input
-                type="text"
-                value={form.location}
-                onChange={update('location')}
-                placeholder="Farm / Area name"
-                className={inputClass}
-              />
-            </div>
-            <div>
-              <label className={labelClass}>City <span className="text-red-400">*</span></label>
-              <input
-                type="text"
-                required
-                value={form.city}
-                onChange={update('city')}
-                placeholder="Nearest city"
-                className={inputClass}
-              />
-            </div>
-            <div>
-              <label className={labelClass}>State <span className="text-red-400">*</span></label>
-              <select value={form.state} onChange={update('state')} required className={selectClass}>
-                <option value="">Select state</option>
-                {INDIAN_STATES.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <LocationPicker
-            city={form.city}
-            state={form.state}
-            latitude={form.latitude}
-            longitude={form.longitude}
-            onChange={handleLocationChange}
-            onAddressChange={handleAddressChange}
-          />
-        </SectionCard>
-
-        {/* 4. Season & Pricing */}
-        <SectionCard
-          stepIndex={3}
-          icon={CurrencyIcon}
-          title="Season & Pricing"
-          completed={completedSteps.pricing}
-        >
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className={labelClass}>Season Start <span className="text-red-400">*</span></label>
-              <select value={form.season_start} onChange={update('season_start')} required className={selectClass}>
-                <option value="">Select month</option>
-                {MONTHS.map((m, i) => (
-                  <option key={m} value={i + 1}>{m}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className={labelClass}>Season End <span className="text-red-400">*</span></label>
-              <select value={form.season_end} onChange={update('season_end')} required className={selectClass}>
-                <option value="">Select month</option>
-                {MONTHS.map((m, i) => (
-                  <option key={m} value={i + 1}>{m}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {form.season_start && form.season_end && (
-            <div className="flex items-center gap-2 text-xs bg-primary/5 border border-primary/10 rounded-xl px-4 py-2.5">
-              <svg className="w-4 h-4 text-primary shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-              </svg>
-              <span className="text-gray-600">
-                Season: <span className="font-semibold text-gray-800">{MONTHS[form.season_start - 1]}</span>
-                {' '}&rarr;{' '}
-                <span className="font-semibold text-gray-800">{MONTHS[form.season_end - 1]}</span>
-              </span>
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className={labelClass}>Price per Season <span className="text-red-400">*</span></label>
-              <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-gray-400 font-medium">₹</span>
-                <input
-                  type="number"
-                  step="0.01"
-                  required
-                  value={form.price_per_season}
-                  onChange={update('price_per_season')}
-                  placeholder="4,500"
-                  className={`${inputClass} pl-8`}
-                />
+          <div className={`bg-white rounded-2xl border transition-all duration-200 ${completedSteps[activeStep.key] ? 'border-primary/30 shadow-sm shadow-primary/5' : 'border-gray-200 shadow-sm'}`}>
+            {/* Section header */}
+            <div className="flex items-center gap-3.5 px-5 py-4 border-b border-gray-100">
+              <div className={`flex items-center justify-center w-9 h-9 rounded-xl ${completedSteps[activeStep.key] ? 'bg-primary/10' : 'bg-gray-100'} transition-colors`}>
+                {completedSteps[activeStep.key]
+                  ? <CheckCircleIcon className="w-5 h-5 text-primary" />
+                  : <ActiveIcon className="w-5 h-5 text-gray-400" />
+                }
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-bold text-gray-300 uppercase tracking-wider">Step {currentStep + 1}</span>
+                  {completedSteps[activeStep.key] && (
+                    <span className="text-[10px] font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">Done</span>
+                  )}
+                </div>
+                <h3 className="text-sm font-semibold text-gray-800">
+                  {activeStep.key === 'images' && 'Tree Photos'}
+                  {activeStep.key === 'basic' && 'Basic Information'}
+                  {activeStep.key === 'location' && 'Location'}
+                  {activeStep.key === 'pricing' && 'Season & Pricing'}
+                  {activeStep.key === 'details' && 'Additional Details'}
+                </h3>
               </div>
             </div>
-            <div>
-              <label className={labelClass}>Price with Delivery</label>
-              <div className="flex items-center gap-2 px-4 py-2.5 bg-emerald-50 border border-emerald-100 rounded-xl">
-                <span className="text-sm font-semibold text-emerald-700">
-                  {form.price_per_season
-                    ? `₹${(parseFloat(form.price_per_season) + 1000).toLocaleString('en-IN')}`
-                    : '—'}
-                </span>
-              </div>
-              <p className="text-[11px] text-gray-400 mt-1.5 ml-1">Season price + ₹1,000 delivery</p>
-            </div>
-          </div>
-        </SectionCard>
 
-        {/* 5. Details */}
-        <SectionCard
-          stepIndex={4}
-          icon={ClipboardIcon}
-          title="Additional Details"
-          completed={completedSteps.details}
-        >
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className={labelClass}>Age of Tree (years)</label>
-              <input
-                type="number"
-                min="0"
-                value={form.age}
-                onChange={update('age')}
-                placeholder="e.g. 12"
-                className={inputClass}
-              />
-            </div>
-            <div>
-              <label className={labelClass}>Previous Year Yield (kg)</label>
-              <input
-                type="number"
-                min="0"
-                step="0.1"
-                value={form.previous_year_yield}
-                onChange={update('previous_year_yield')}
-                placeholder="e.g. 120"
-                className={inputClass}
-              />
+            {/* Section body */}
+            <div className="px-5 py-5">
+              {stepContent[activeStep.key]}
             </div>
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className={labelClass}>Min Yield Guarantee (kg/season)</label>
-              <input
-                type="number"
-                min="1"
-                value={form.min_quantity}
-                onChange={update('min_quantity')}
-                placeholder="e.g. 50"
-                className={inputClass}
-              />
-            </div>
-            <div>
-              <label className={labelClass}>Size</label>
-              <select value={form.size} onChange={update('size')} className={selectClass}>
-                {SIZES.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </SectionCard>
+        </div>
 
         {/* Error */}
         {error && (
-          <div className="flex items-start gap-3 bg-red-50 border border-red-100 rounded-2xl px-5 py-4">
+          <div className="flex items-start gap-3 bg-red-50 border border-red-100 rounded-2xl px-5 py-4 mt-5">
             <svg className="w-5 h-5 text-red-500 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clipRule="evenodd" />
             </svg>
@@ -504,38 +605,81 @@ export default function AddTree() {
           </div>
         )}
 
-        {/* Actions */}
-        <div className="flex flex-col sm:flex-row gap-3 pt-3 pb-8">
-          <Link
-            to="/owner/trees"
-            className="flex-1 px-5 py-3.5 border border-gray-200 text-gray-600 rounded-xl text-sm font-medium text-center hover:bg-gray-50 hover:border-gray-300 transition-all"
-          >
-            Cancel
-          </Link>
-          <button
-            type="submit"
-            disabled={loading}
-            className="flex-1 px-5 py-3.5 bg-linear-to-r from-primary to-emerald-600 text-white rounded-xl text-sm font-semibold shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 hover:brightness-105 transition-all disabled:opacity-50 disabled:shadow-none flex items-center justify-center gap-2"
-          >
-            {loading ? (
-              <>
-                <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                </svg>
-                Creating...
-              </>
-            ) : (
-              <>
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                </svg>
-                List My Tree
-              </>
-            )}
-          </button>
+        {/* Navigation */}
+        <div className="flex items-center gap-3 pt-6 pb-8">
+          {isFirstStep ? (
+            <Link
+              to="/owner/trees"
+              className="px-5 py-3 border border-gray-200 text-gray-600 rounded-xl text-sm font-medium text-center hover:bg-gray-50 hover:border-gray-300 transition-all"
+            >
+              Cancel
+            </Link>
+          ) : (
+            <button
+              type="button"
+              onClick={goBack}
+              className="flex items-center gap-2 px-5 py-3 border border-gray-200 text-gray-600 rounded-xl text-sm font-medium hover:bg-gray-50 hover:border-gray-300 transition-all"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
+              Back
+            </button>
+          )}
+
+          <div className="flex-1" />
+
+          {isLastStep ? (
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex items-center gap-2 px-6 py-3 bg-linear-to-r from-primary to-emerald-600 text-white rounded-xl text-sm font-semibold shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 hover:brightness-105 transition-all disabled:opacity-50 disabled:shadow-none"
+            >
+              {loading ? (
+                <>
+                  <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Creating...
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                  </svg>
+                  List My Tree
+                </>
+              )}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={goNext}
+              className="flex items-center gap-2 px-6 py-3 bg-linear-to-r from-primary to-emerald-600 text-white rounded-xl text-sm font-semibold shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 hover:brightness-105 transition-all"
+            >
+              Continue
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          )}
         </div>
       </form>
+
+      {/* Slide animation styles */}
+      <style>{`
+        @keyframes fadeSlideRight {
+          from { opacity: 0; transform: translateX(30px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes fadeSlideLeft {
+          from { opacity: 0; transform: translateX(-30px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+        .animate-fade-slide-right { animation: fadeSlideRight 0.3s ease-out; }
+        .animate-fade-slide-left { animation: fadeSlideLeft 0.3s ease-out; }
+      `}</style>
     </div>
   );
 }

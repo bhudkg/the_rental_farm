@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 import crud
 from auth_utils import get_current_user, require_user
 from database import get_db
-from models import OwnerRating, Tree, TreeView, User
+from models import OwnerProfile, OwnerRating, Tree, TreeView, User
 from schemas import TreeCreate, TreeDetailOut, TreeOut, TreeUpdate
 
 router = APIRouter(prefix="/api/trees", tags=["trees"])
@@ -130,6 +130,12 @@ def create_tree(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_user),
 ):
+    owner_profile = db.query(OwnerProfile).filter(OwnerProfile.user_id == current_user.id).first()
+    if not owner_profile:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="owner_profile_required",
+        )
     data = body.model_dump()
     data["owner_id"] = current_user.id
     return crud.create_tree(db, data)

@@ -14,6 +14,7 @@ class User(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String(120), nullable=False)
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
+    phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
     password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
     role: Mapped[str] = mapped_column(String(20), nullable=False, default="renter")
     auth_provider: Mapped[str] = mapped_column(String(20), nullable=False, server_default="local")
@@ -22,6 +23,8 @@ class User(Base):
     orders: Mapped[list["Order"]] = relationship(back_populates="user")
     listed_trees: Mapped[list["Tree"]] = relationship(back_populates="owner")
     wishlisted_trees: Mapped[list["Wishlist"]] = relationship(back_populates="user")
+    addresses: Mapped[list["UserAddress"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    owner_profile: Mapped["OwnerProfile | None"] = relationship(back_populates="user", uselist=False, cascade="all, delete-orphan")
 
 
 class Tree(Base):
@@ -69,7 +72,16 @@ class Order(Base):
     total_price: Mapped[float] = mapped_column(Float, nullable=False)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    
+
+    # Delivery address snapshot (copied from UserAddress at checkout time)
+    delivery_full_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    delivery_phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    delivery_address_line_1: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    delivery_address_line_2: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    delivery_city: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    delivery_state: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    delivery_pincode: Mapped[str | None] = mapped_column(String(10), nullable=True)
+
     payment_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
     payment_gateway: Mapped[str | None] = mapped_column(String(20), nullable=True)
     payment_status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
@@ -128,3 +140,45 @@ class OwnerRating(Base):
     rating: Mapped[int] = mapped_column(Integer, nullable=False)
     review: Mapped[str | None] = mapped_column(String(1000), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class UserAddress(Base):
+    __tablename__ = "user_addresses"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+    label: Mapped[str] = mapped_column(String(50), nullable=False, default="Home")
+    full_name: Mapped[str] = mapped_column(String(200), nullable=False)
+    phone: Mapped[str] = mapped_column(String(20), nullable=False)
+    address_line_1: Mapped[str] = mapped_column(String(500), nullable=False)
+    address_line_2: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    city: Mapped[str] = mapped_column(String(100), nullable=False)
+    state: Mapped[str] = mapped_column(String(100), nullable=False)
+    pincode: Mapped[str] = mapped_column(String(10), nullable=False)
+    is_default: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), onupdate=func.now(), nullable=True)
+
+    user: Mapped["User"] = relationship(back_populates="addresses")
+
+
+class OwnerProfile(Base):
+    __tablename__ = "owner_profiles"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), unique=True, nullable=False)
+    farm_address: Mapped[str] = mapped_column(String(500), nullable=False)
+    farm_city: Mapped[str] = mapped_column(String(100), nullable=False)
+    farm_state: Mapped[str] = mapped_column(String(100), nullable=False)
+    farm_pincode: Mapped[str] = mapped_column(String(10), nullable=False)
+    id_proof_type: Mapped[str] = mapped_column(String(20), nullable=False)
+    id_proof_number: Mapped[str] = mapped_column(String(50), nullable=False)
+    bank_account_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    bank_account_number: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    bank_ifsc: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    upi_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    is_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), onupdate=func.now(), nullable=True)
+
+    user: Mapped["User"] = relationship(back_populates="owner_profile")

@@ -6,8 +6,8 @@ from sqlalchemy.orm import Session
 import crud
 from auth_utils import require_user
 from database import get_db
-from models import User
-from schemas import OrderOut, TreeOut
+from models import OwnerProfile, User
+from schemas import OrderOut, OwnerProfileCreate, OwnerProfileOut, OwnerProfileUpdate, TreeOut
 
 router = APIRouter(prefix="/api/owner", tags=["owner"])
 
@@ -72,3 +72,53 @@ def mark_order_delivered(
     db.commit()
     db.refresh(order, ["tree"])
     return order
+
+
+# ── Owner Profile ──
+
+
+@router.get("/profile", response_model=OwnerProfileOut)
+def get_owner_profile(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_user),
+):
+    profile = db.query(OwnerProfile).filter(OwnerProfile.user_id == current_user.id).first()
+    if not profile:
+        raise HTTPException(status_code=404, detail="Owner profile not found")
+    return profile
+
+
+@router.post("/profile", response_model=OwnerProfileOut, status_code=status.HTTP_201_CREATED)
+def create_owner_profile(
+    body: OwnerProfileCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_user),
+):
+    existing = db.query(OwnerProfile).filter(OwnerProfile.user_id == current_user.id).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Owner profile already exists")
+
+    profile = OwnerProfile(user_id=current_user.id, **body.model_dump())
+    db.add(profile)
+    db.commit()
+    db.refresh(profile)
+    return profile
+
+
+@router.put("/profile", response_model=OwnerProfileOut)
+def update_owner_profile(
+    body: OwnerProfileUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_user),
+):
+    profile = db.query(OwnerProfile).filter(OwnerProfile.user_id == current_user.id).first()
+    if not profile:
+        raise HTTPException(status_code=404, detail="Owner profile not found")
+
+    updates = body.model_dump(exclude_unset=True)
+    for key, val in updates.items():
+        setattr(profile, key, val)
+
+    db.commit()
+    db.refresh(profile)
+    return profile

@@ -6,9 +6,9 @@ from sqlalchemy.orm import Session
 
 import crud
 import payment_service
-from auth_utils import get_current_user
+from auth_utils import require_user
 from database import get_db
-from models import User
+from models import User, UserAddress
 from schemas import (
     BatchOrderCreate,
     BatchPaymentVerifyRequest,
@@ -22,47 +22,68 @@ from schemas import (
 router = APIRouter(prefix="/api/orders", tags=["orders"])
 
 
+def _get_address_snapshot(db: Session, address_id: uuid.UUID, user_id: uuid.UUID) -> dict:
+    """Fetch an address and return a dict of delivery snapshot fields."""
+    address = (
+        db.query(UserAddress)
+        .filter(UserAddress.id == address_id, UserAddress.user_id == user_id)
+        .first()
+    )
+    if not address:
+        raise HTTPException(status_code=400, detail="Delivery address not found")
+    return {
+        "delivery_full_name": address.full_name,
+        "delivery_phone": address.phone,
+        "delivery_address_line_1": address.address_line_1,
+        "delivery_address_line_2": address.address_line_2,
+        "delivery_city": address.city,
+        "delivery_state": address.state,
+        "delivery_pincode": address.pincode,
+    }
+
+
 @router.post("", status_code=status.HTTP_201_CREATED)
 def create_order(
     body: OrderCreate,
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user),
+    current_user: User = Depends(require_user),
 ):
     tree = crud.get_tree(db, body.tree_id)
     if not tree:
         raise HTTPException(status_code=404, detail="Tree not found")
 
+    if not current_user.phone:
+        raise HTTPException(status_code=400, detail="Phone number required. Please update your profile.")
+
+    delivery = _get_address_snapshot(db, body.address_id, current_user.id)
     total_price = (tree.price_per_season or 0) + 1000
 
-    user_id = current_user.id if current_user else _get_or_create_guest(db)
-
     order = crud.create_order(db, {
-        "user_id": user_id,
+        "user_id": current_user.id,
         "tree_id": body.tree_id,
         "total_price": total_price,
         "status": "pending",
         "payment_status": "pending",
+        **delivery,
     })
     db.refresh(order, ["tree"])
-    
-    user_info = None
-    if current_user:
-        user_info = {
-            "name": current_user.name,
-            "email": current_user.email,
-        }
-    
+
+    user_info = {
+        "name": current_user.name,
+        "email": current_user.email,
+    }
+
     try:
         payment_details = payment_service.create_payment_order(
             order_id=order.id,
             amount=total_price,
             user_info=user_info,
         )
-        
+
         order.payment_gateway = payment_details["gateway"]
         db.commit()
         db.refresh(order)
-        
+
         return {
             "order": OrderOut.model_validate(order),
             "payment": PaymentDetailsOut(**payment_details),
@@ -75,12 +96,15 @@ def create_order(
 def create_batch_orders(
     body: BatchOrderCreate,
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user),
+    current_user: User = Depends(require_user),
 ):
     if not body.items:
         raise HTTPException(status_code=400, detail="Cart is empty")
 
-    user_id = current_user.id if current_user else _get_or_create_guest(db)
+    if not current_user.phone:
+        raise HTTPException(status_code=400, detail="Phone number required. Please update your profile.")
+
+    delivery = _get_address_snapshot(db, body.address_id, current_user.id)
 
     orders = []
     total_amount = 0.0
@@ -94,18 +118,17 @@ def create_batch_orders(
         total_amount += item_price
 
         order = crud.create_order(db, {
-            "user_id": user_id,
+            "user_id": current_user.id,
             "tree_id": item.tree_id,
             "total_price": item_price,
             "status": "pending",
             "payment_status": "pending",
+            **delivery,
         })
         db.refresh(order, ["tree"])
         orders.append(order)
 
-    user_info = None
-    if current_user:
-        user_info = {"name": current_user.name, "email": current_user.email}
+    user_info = {"name": current_user.name, "email": current_user.email}
 
     try:
         batch_id = orders[0].id
@@ -185,11 +208,9 @@ def verify_batch_payment(
 @router.get("", response_model=list[OrderOut])
 def list_orders(
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user),
+    current_user: User = Depends(require_user),
 ):
-    if current_user:
-        return crud.get_orders_for_user(db, current_user.id)
-    return crud.get_all_orders(db)
+    return crud.get_orders_for_user(db, current_user.id)
 
 
 @router.get("/{order_id}", response_model=OrderOut)
@@ -198,9 +219,6 @@ def get_order(order_id: uuid.UUID, db: Session = Depends(get_db)):
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
     return order
-
-
-_guest_id: uuid.UUID | None = None
 
 
 @router.post("/{order_id}/payment/verify", response_model=OrderOut)
@@ -273,13 +291,13 @@ def get_payment_status(order_id: uuid.UUID, db: Session = Depends(get_db)):
 def cancel_order(
     order_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user),
+    current_user: User = Depends(require_user),
 ):
     order = crud.get_order(db, order_id)
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
-    
-    if current_user and order.user_id != current_user.id:
+
+    if order.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to cancel this order")
     
     if order.status == "cancelled":
@@ -304,19 +322,3 @@ def cancel_order(
     return order
 
 
-_guest_id: uuid.UUID | None = None
-
-
-def _get_or_create_guest(db: Session) -> uuid.UUID:
-    global _guest_id
-    if _guest_id:
-        return _guest_id
-    guest = crud.get_user_by_email(db, "guest@rental.farm")
-    if not guest:
-        guest = crud.create_user(db, {
-            "name": "Guest",
-            "email": "guest@rental.farm",
-            "password_hash": "nologin",
-        })
-    _guest_id = guest.id
-    return _guest_id

@@ -11,8 +11,8 @@ logger = logging.getLogger(__name__)
 import crud
 from auth_utils import create_access_token, hash_password, require_user, verify_password
 from database import get_db
-from models import User
-from schemas import GoogleLoginRequest, LoginRequest, Token, UserCreate, UserOut
+from models import OwnerProfile, User, UserAddress
+from schemas import GoogleLoginRequest, LoginRequest, PhoneUpdate, Token, UserCreate, UserMeOut, UserOut
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -95,6 +95,43 @@ def google_login(body: GoogleLoginRequest, db: Session = Depends(get_db)):
     }
 
 
-@router.get("/me", response_model=UserOut)
-def get_me(current_user: User = Depends(require_user)):
-    return current_user
+@router.get("/me", response_model=UserMeOut)
+def get_me(
+    current_user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    has_owner_profile = (
+        db.query(OwnerProfile).filter(OwnerProfile.user_id == current_user.id).first() is not None
+    )
+
+    default_address = (
+        db.query(UserAddress)
+        .filter(UserAddress.user_id == current_user.id, UserAddress.is_default.is_(True))
+        .first()
+    )
+    has_addresses = (
+        db.query(UserAddress).filter(UserAddress.user_id == current_user.id).count() > 0
+    )
+
+    return UserMeOut(
+        id=current_user.id,
+        name=current_user.name,
+        email=current_user.email,
+        phone=current_user.phone,
+        has_owner_profile=has_owner_profile,
+        has_addresses=has_addresses,
+        default_address_id=default_address.id if default_address else None,
+        created_at=current_user.created_at,
+    )
+
+
+@router.put("/me/phone", response_model=UserMeOut)
+def update_phone(
+    body: PhoneUpdate,
+    current_user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    current_user.phone = body.phone
+    db.commit()
+    db.refresh(current_user)
+    return get_me(current_user=current_user, db=db)

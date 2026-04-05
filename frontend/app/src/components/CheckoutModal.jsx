@@ -1,16 +1,22 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createBatchOrder, verifyBatchPayment } from '../services/api';
+import { createBatchOrder, verifyBatchPayment, updatePhone } from '../services/api';
+import AddressPickerCheckout from './AddressPickerCheckout';
 import useStore, { DELIVERY_FEE } from '../store/useStore';
 
 const PLACEHOLDER_IMG = 'https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=200&q=60';
 
 export default function CheckoutModal({ onClose }) {
   const navigate = useNavigate();
-  const { cart, getCartTotal, clearCart } = useStore();
+  const { cart, getCartTotal, clearCart, user, setUser } = useStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [razorpayLoaded, setRazorpayLoaded] = useState(false);
+  const [selectedAddressId, setSelectedAddressId] = useState(user?.default_address_id || null);
+  const [phoneInput, setPhoneInput] = useState('');
+  const [savingPhone, setSavingPhone] = useState(false);
+
+  const needsPhone = !user?.phone;
 
   useEffect(() => {
     const existing = document.querySelector('script[src*="razorpay"]');
@@ -36,7 +42,24 @@ export default function CheckoutModal({ onClose }) {
   );
   const deliverySubtotal = cart.length * DELIVERY_FEE;
 
+  const handleSavePhone = async () => {
+    if (!phoneInput.trim()) return;
+    setSavingPhone(true);
+    try {
+      const updated = await updatePhone(phoneInput.trim());
+      setUser(updated);
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to save phone');
+    } finally {
+      setSavingPhone(false);
+    }
+  };
+
   const handleConfirm = async () => {
+    if (!selectedAddressId) {
+      setError('Please select a delivery address');
+      return;
+    }
     setLoading(true);
     setError(null);
 
@@ -45,7 +68,7 @@ export default function CheckoutModal({ onClose }) {
     }));
 
     try {
-      const response = await createBatchOrder({ items });
+      const response = await createBatchOrder({ items, address_id: selectedAddressId });
       const { orders, payment: paymentData } = response;
 
       if (paymentData.gateway === 'razorpay') {
@@ -121,6 +144,36 @@ export default function CheckoutModal({ onClose }) {
 
         {/* Body - scrollable */}
         <div className="flex-1 overflow-y-auto p-6 space-y-5">
+          {/* Phone check */}
+          {needsPhone && (
+            <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 space-y-2">
+              <p className="text-sm font-medium text-amber-800">Phone number required</p>
+              <div className="flex gap-2">
+                <input
+                  value={phoneInput}
+                  onChange={(e) => setPhoneInput(e.target.value)}
+                  placeholder="10-digit mobile"
+                  className="flex-1 px-3 py-2 border border-amber-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                />
+                <button
+                  onClick={handleSavePhone}
+                  disabled={savingPhone}
+                  className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg disabled:opacity-50"
+                >
+                  {savingPhone ? '...' : 'Save'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Address picker */}
+          {!needsPhone && (
+            <AddressPickerCheckout
+              selectedId={selectedAddressId}
+              onSelect={setSelectedAddressId}
+            />
+          )}
+
           {/* Cart items */}
           <div className="space-y-3">
             {cart.map(({ tree }) => {
@@ -183,7 +236,7 @@ export default function CheckoutModal({ onClose }) {
           </button>
           <button
             onClick={handleConfirm}
-            disabled={loading || cart.length === 0}
+            disabled={loading || cart.length === 0 || needsPhone || !selectedAddressId}
             className="flex-1 px-4 py-3 bg-linear-to-r from-primary to-emerald-600 text-white rounded-xl text-sm font-semibold hover:brightness-105 transition-all disabled:opacity-50 shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
           >
             {loading ? (

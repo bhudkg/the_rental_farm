@@ -14,6 +14,7 @@ import OrderDetail from './pages/OrderDetail';
 import Login from './pages/Login';
 import Wishlist from './pages/Wishlist';
 import Trending from './pages/Trending';
+import Profile from './pages/Profile';
 import PaymentSuccess from './pages/PaymentSuccess';
 import PaymentFailure from './pages/PaymentFailure';
 import OwnerDashboard from './pages/owner/OwnerDashboard';
@@ -53,6 +54,7 @@ export default function App() {
               <Route path="/wishlist" element={<Wishlist />} />
               <Route path="/orders" element={<Orders />} />
               <Route path="/orders/:id" element={<OrderDetail />} />
+              <Route path="/profile" element={<Profile />} />
               <Route path="/login" element={<Login />} />
               <Route path="/payment-success" element={<PaymentSuccess />} />
               <Route path="/payment-failure" element={<PaymentFailure />} />

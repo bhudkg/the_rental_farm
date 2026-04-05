@@ -1,15 +1,23 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createOrder, verifyPayment } from '../services/api';
+import { createOrder, verifyPayment, updatePhone } from '../services/api';
+import AddressPickerCheckout from './AddressPickerCheckout';
+import useStore from '../store/useStore';
 
 export default function BookingModal({ tree, totalPrice, deposit, onClose }) {
   const navigate = useNavigate();
+  const user = useStore((s) => s.user);
+  const setUser = useStore((s) => s.setUser);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [razorpayLoaded, setRazorpayLoaded] = useState(false);
+  const [selectedAddressId, setSelectedAddressId] = useState(user?.default_address_id || null);
+  const [phoneInput, setPhoneInput] = useState('');
+  const [savingPhone, setSavingPhone] = useState(false);
 
   const DELIVERY_FEE = 1000;
   const seasonPrice = Number(tree.price_per_season) || 0;
+  const needsPhone = !user?.phone;
 
   useEffect(() => {
     const script = document.createElement('script');
@@ -23,12 +31,30 @@ export default function BookingModal({ tree, totalPrice, deposit, onClose }) {
     };
   }, []);
 
+  const handleSavePhone = async () => {
+    if (!phoneInput.trim()) return;
+    setSavingPhone(true);
+    try {
+      const updated = await updatePhone(phoneInput.trim());
+      setUser(updated);
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to save phone');
+    } finally {
+      setSavingPhone(false);
+    }
+  };
+
   const handleConfirm = async () => {
+    if (!selectedAddressId) {
+      setError('Please select a delivery address');
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
       const response = await createOrder({
         tree_id: tree.id,
+        address_id: selectedAddressId,
       });
       
       const orderData = response.order;
@@ -121,6 +147,36 @@ export default function BookingModal({ tree, totalPrice, deposit, onClose }) {
             </div>
           </div>
 
+          {/* Phone check */}
+          {needsPhone && (
+            <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 space-y-2">
+              <p className="text-sm font-medium text-amber-800">Phone number required</p>
+              <div className="flex gap-2">
+                <input
+                  value={phoneInput}
+                  onChange={(e) => setPhoneInput(e.target.value)}
+                  placeholder="10-digit mobile"
+                  className="flex-1 px-3 py-2 border border-amber-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                />
+                <button
+                  onClick={handleSavePhone}
+                  disabled={savingPhone}
+                  className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg disabled:opacity-50"
+                >
+                  {savingPhone ? '...' : 'Save'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Address picker */}
+          {!needsPhone && (
+            <AddressPickerCheckout
+              selectedId={selectedAddressId}
+              onSelect={setSelectedAddressId}
+            />
+          )}
+
           {/* Price breakdown */}
           <div className="space-y-2.5 text-sm">
             <div className="flex justify-between text-gray-600">
@@ -168,7 +224,7 @@ export default function BookingModal({ tree, totalPrice, deposit, onClose }) {
             </button>
             <button
               onClick={handleConfirm}
-              disabled={loading}
+              disabled={loading || needsPhone || !selectedAddressId}
               className="flex-1 px-4 py-3 bg-linear-to-r from-primary to-emerald-600 text-white rounded-xl text-sm font-semibold hover:brightness-105 transition-all disabled:opacity-50 shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
             >
               {loading ? (

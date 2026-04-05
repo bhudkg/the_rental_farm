@@ -7,7 +7,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from database import Base, SessionLocal, engine, get_db
-from routes import auth, images, orders, owner, ratings, trees, webhooks, wishlist
+from routes import addresses, auth, images, orders, owner, ratings, trees, webhooks, wishlist
 from seed import seed_trees
 from trending import recompute_trending_scores
 
@@ -40,6 +40,7 @@ app.include_router(auth.router)
 app.include_router(trees.router)
 app.include_router(orders.router)
 app.include_router(owner.router)
+app.include_router(addresses.router)
 app.include_router(images.router)
 app.include_router(webhooks.router)
 app.include_router(wishlist.router)

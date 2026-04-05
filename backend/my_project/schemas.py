@@ -16,9 +16,27 @@ class UserOut(BaseModel):
     id: uuid.UUID
     name: str
     email: EmailStr
+    phone: str | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class UserMeOut(BaseModel):
+    id: uuid.UUID
+    name: str
+    email: EmailStr
+    phone: str | None = None
+    has_owner_profile: bool = False
+    has_addresses: bool = False
+    default_address_id: uuid.UUID | None = None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class PhoneUpdate(BaseModel):
+    phone: str
 
 
 class Token(BaseModel):
@@ -121,6 +139,7 @@ class TreeDetailOut(TreeOut):
 
 class OrderCreate(BaseModel):
     tree_id: uuid.UUID
+    address_id: uuid.UUID
 
 
 class BatchOrderItem(BaseModel):
@@ -129,6 +148,7 @@ class BatchOrderItem(BaseModel):
 
 class BatchOrderCreate(BaseModel):
     items: list[BatchOrderItem]
+    address_id: uuid.UUID
 
 
 class BatchPaymentVerifyRequest(BaseModel):
@@ -146,6 +166,13 @@ class OrderOut(BaseModel):
     status: str
     created_at: datetime
     tree: TreeOut | None = None
+    delivery_full_name: str | None = None
+    delivery_phone: str | None = None
+    delivery_address_line_1: str | None = None
+    delivery_address_line_2: str | None = None
+    delivery_city: str | None = None
+    delivery_state: str | None = None
+    delivery_pincode: str | None = None
     payment_id: str | None = None
     payment_gateway: str | None = None
     payment_status: str = "pending"
@@ -206,3 +233,95 @@ class CanRateOut(BaseModel):
     owner_id: uuid.UUID | None = None
     owner_name: str | None = None
     already_rated: bool = False
+
+
+# ── Addresses ──
+
+class AddressCreate(BaseModel):
+    label: str = "Home"
+    full_name: str
+    phone: str
+    address_line_1: str
+    address_line_2: str | None = None
+    city: str
+    state: str
+    pincode: str
+    is_default: bool = False
+
+
+class AddressUpdate(BaseModel):
+    label: str | None = None
+    full_name: str | None = None
+    phone: str | None = None
+    address_line_1: str | None = None
+    address_line_2: str | None = None
+    city: str | None = None
+    state: str | None = None
+    pincode: str | None = None
+    is_default: bool | None = None
+
+
+class AddressOut(BaseModel):
+    id: uuid.UUID
+    user_id: uuid.UUID
+    label: str
+    full_name: str
+    phone: str
+    address_line_1: str
+    address_line_2: str | None = None
+    city: str
+    state: str
+    pincode: str
+    is_default: bool
+    created_at: datetime
+    updated_at: datetime | None = None
+
+    model_config = {"from_attributes": True}
+
+
+# ── Owner Profile ──
+
+class OwnerProfileCreate(BaseModel):
+    farm_address: str
+    farm_city: str
+    farm_state: str
+    farm_pincode: str
+    id_proof_type: str
+    id_proof_number: str
+    bank_account_name: str | None = None
+    bank_account_number: str | None = None
+    bank_ifsc: str | None = None
+    upi_id: str | None = None
+
+
+class OwnerProfileUpdate(BaseModel):
+    farm_address: str | None = None
+    farm_city: str | None = None
+    farm_state: str | None = None
+    farm_pincode: str | None = None
+    id_proof_type: str | None = None
+    id_proof_number: str | None = None
+    bank_account_name: str | None = None
+    bank_account_number: str | None = None
+    bank_ifsc: str | None = None
+    upi_id: str | None = None
+
+
+class OwnerProfileOut(BaseModel):
+    id: uuid.UUID
+    user_id: uuid.UUID
+    farm_address: str
+    farm_city: str
+    farm_state: str
+    farm_pincode: str
+    id_proof_type: str
+    id_proof_number: str
+    bank_account_name: str | None = None
+    bank_account_number: str | None = None
+    bank_ifsc: str | None = None
+    upi_id: str | None = None
+    is_verified: bool
+    created_at: datetime
+    updated_at: datetime | None = None
+
+    model_config = {"from_attributes": True}

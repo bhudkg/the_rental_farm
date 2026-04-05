@@ -110,6 +110,12 @@ const useStore = create((set, get) => ({
     localStorage.removeItem('user');
     set({ user: null, token: null });
   },
+
+  // ── Profile helpers ──
+  hasPhone: () => !!get().user?.phone,
+  hasOwnerProfile: () => !!get().user?.has_owner_profile,
+  hasAddresses: () => !!get().user?.has_addresses,
+  defaultAddressId: () => get().user?.default_address_id || null,
 }));
 
 export default useStore;

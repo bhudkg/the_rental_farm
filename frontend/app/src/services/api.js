@@ -103,6 +103,29 @@ export const googleLogin = (idToken) =>
 
 export const fetchMe = () => api.get('/auth/me').then((r) => r.data);
 
+export const updatePhone = (phone) =>
+  api.put('/auth/me/phone', { phone }).then((r) => r.data);
+
+// ── Addresses ──
+
+export const fetchAddresses = () => api.get('/addresses').then((r) => r.data);
+
+export const createAddress = (data) => api.post('/addresses', data).then((r) => r.data);
+
+export const updateAddress = (id, data) => api.put(`/addresses/${id}`, data).then((r) => r.data);
+
+export const deleteAddress = (id) => api.delete(`/addresses/${id}`);
+
+export const setDefaultAddress = (id) => api.put(`/addresses/${id}/default`).then((r) => r.data);
+
+// ── Owner Profile ──
+
+export const fetchOwnerProfile = () => api.get('/owner/profile').then((r) => r.data);
+
+export const createOwnerProfile = (data) => api.post('/owner/profile', data).then((r) => r.data);
+
+export const updateOwnerProfile = (data) => api.put('/owner/profile', data).then((r) => r.data);
+
 // ── Images ──
 
 export const storeImageUrl = (imageUrl) =>
