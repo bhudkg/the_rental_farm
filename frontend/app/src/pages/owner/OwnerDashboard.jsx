@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { fetchOwnerStats, fetchOwnerOrders, markOrderDelivered } from '../../services/api';
+import { fetchOwnerStats, fetchOwnerOrders, markOrderDelivered, activateOrder, fetchPendingUpdates } from '../../services/api';
+import PostUpdateModal from '../../components/PostUpdateModal';
 
 const STATUS_STYLES = {
   pending: 'bg-yellow-100 text-yellow-700',
@@ -14,15 +15,19 @@ const STATUS_STYLES = {
 export default function OwnerDashboard() {
   const [stats, setStats] = useState(null);
   const [orders, setOrders] = useState([]);
+  const [pendingUpdates, setPendingUpdates] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    Promise.all([fetchOwnerStats(), fetchOwnerOrders()])
-      .then(([s, o]) => {
+  const loadData = () =>
+    Promise.all([fetchOwnerStats(), fetchOwnerOrders(), fetchPendingUpdates()])
+      .then(([s, o, p]) => {
         setStats(s);
-        setOrders(o.slice(0, 5));
-      })
-      .finally(() => setLoading(false));
+        setOrders(o.slice(0, 10));
+        setPendingUpdates(p);
+      });
+
+  useEffect(() => {
+    loadData().finally(() => setLoading(false));
   }, []);
 
   if (loading) {
@@ -109,6 +114,28 @@ export default function OwnerDashboard() {
         </Link>
       </div>
 
+      {/* Pending updates alert */}
+      {pendingUpdates.length > 0 && (
+        <div className="mb-10 bg-amber-50 border border-amber-200 rounded-2xl p-5">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
+              <svg className="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="font-semibold text-amber-900">Pending Weekly Updates</h3>
+              <p className="text-sm text-amber-700">{pendingUpdates.length} order(s) need this week's update</p>
+            </div>
+          </div>
+          <div className="space-y-2">
+            {pendingUpdates.map((p) => (
+              <PendingUpdateRow key={p.order_id} item={p} onPosted={loadData} />
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Recent orders */}
       <div>
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Rental Orders</h2>
@@ -119,9 +146,10 @@ export default function OwnerDashboard() {
         ) : (
           <div className="space-y-3">
             {orders.map((order) => (
-              <OrderRow key={order.id} order={order} onDelivered={(updatedOrder) => {
+              <OrderRow key={order.id} order={order} onUpdate={(updatedOrder) => {
                 setOrders((prev) => prev.map((o) => o.id === updatedOrder.id ? updatedOrder : o));
-              }} />
+                loadData();
+              }} pendingUpdates={pendingUpdates} />
             ))}
           </div>
         )}
@@ -131,8 +159,46 @@ export default function OwnerDashboard() {
 }
 
 
-function OrderRow({ order, onDelivered }) {
+function PendingUpdateRow({ item, onPosted }) {
+  const [showModal, setShowModal] = useState(false);
+
+  return (
+    <>
+      <div className="flex items-center gap-3 bg-white rounded-xl p-3 border border-amber-100">
+        {item.tree_image && (
+          <img src={item.tree_image} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />
+        )}
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-gray-900 truncate">{item.tree_name}</p>
+          <p className="text-xs text-gray-500">Week {item.week_number}</p>
+        </div>
+        <button
+          onClick={() => setShowModal(true)}
+          className="text-xs font-semibold px-3 py-1.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors shrink-0"
+        >
+          Post Update
+        </button>
+      </div>
+      {showModal && (
+        <PostUpdateModal
+          orderId={item.order_id}
+          weekNumber={item.week_number}
+          treeName={item.tree_name}
+          onClose={() => setShowModal(false)}
+          onPosted={onPosted}
+        />
+      )}
+    </>
+  );
+}
+
+
+function OrderRow({ order, onUpdate, pendingUpdates }) {
   const [delivering, setDelivering] = useState(false);
+  const [activating, setActivating] = useState(false);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+
+  const needsUpdate = pendingUpdates?.some((p) => p.order_id === order.id);
 
   const handleDeliver = async (e) => {
     e.stopPropagation();
@@ -140,48 +206,98 @@ function OrderRow({ order, onDelivered }) {
     setDelivering(true);
     try {
       const updated = await markOrderDelivered(order.id);
-      onDelivered(updated);
+      onUpdate(updated);
     } catch {
-      // silently fail — button stays
+      // silently fail
     } finally {
       setDelivering(false);
     }
   };
 
+  const handleActivate = async (e) => {
+    e.stopPropagation();
+    if (activating) return;
+    setActivating(true);
+    try {
+      const updated = await activateOrder(order.id);
+      onUpdate(updated);
+    } catch {
+      // silently fail
+    } finally {
+      setActivating(false);
+    }
+  };
+
+  const pending = pendingUpdates?.find((p) => p.order_id === order.id);
+
   return (
-    <div className="flex items-center gap-4 p-4 bg-white border border-gray-100 rounded-xl">
-      {order.tree && (
-        <img
-          src={order.tree.image_urls?.[0] || order.tree.image_url}
-          alt={order.tree.name}
-          className="w-12 h-12 rounded-lg object-cover shrink-0"
+    <>
+      <div className="flex items-center gap-4 p-4 bg-white border border-gray-100 rounded-xl">
+        {order.tree && (
+          <img
+            src={order.tree.image_urls?.[0] || order.tree.image_url}
+            alt={order.tree.name}
+            className="w-12 h-12 rounded-lg object-cover shrink-0"
+          />
+        )}
+        <div className="flex-1 min-w-0">
+          <p className="font-medium text-gray-900 truncate">{order.tree?.name}</p>
+          <p className="text-xs text-gray-500">
+            {new Date(order.created_at).toLocaleDateString('en-IN', {
+              day: 'numeric', month: 'short', year: 'numeric',
+            })}
+          </p>
+        </div>
+        <span
+          className={`text-xs font-semibold px-2.5 py-0.5 rounded-full capitalize ${
+            STATUS_STYLES[order.status] || 'bg-gray-100'
+          }`}
+        >
+          {order.status}
+        </span>
+
+        {order.status === 'confirmed' && (
+          <button
+            onClick={handleActivate}
+            disabled={activating}
+            className="text-xs font-semibold px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 shrink-0"
+          >
+            {activating ? 'Starting...' : 'Start Season'}
+          </button>
+        )}
+
+        {order.status === 'active' && (
+          <>
+            {needsUpdate && (
+              <button
+                onClick={() => setShowUpdateModal(true)}
+                className="text-xs font-semibold px-3 py-1.5 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors shrink-0"
+              >
+                Post Update
+              </button>
+            )}
+            <button
+              onClick={handleDeliver}
+              disabled={delivering}
+              className="text-xs font-semibold px-3 py-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 shrink-0"
+            >
+              {delivering ? 'Marking...' : 'Mark Delivered'}
+            </button>
+          </>
+        )}
+
+        <span className="font-bold text-gray-900 shrink-0">₹{order.total_price.toFixed(2)}</span>
+      </div>
+
+      {showUpdateModal && pending && (
+        <PostUpdateModal
+          orderId={order.id}
+          weekNumber={pending.week_number}
+          treeName={order.tree?.name || 'Tree'}
+          onClose={() => setShowUpdateModal(false)}
+          onPosted={onUpdate}
         />
       )}
-      <div className="flex-1 min-w-0">
-        <p className="font-medium text-gray-900 truncate">{order.tree?.name}</p>
-        <p className="text-xs text-gray-500">
-          {new Date(order.created_at).toLocaleDateString('en-IN', {
-            day: 'numeric', month: 'short', year: 'numeric',
-          })}
-        </p>
-      </div>
-      <span
-        className={`text-xs font-semibold px-2.5 py-0.5 rounded-full capitalize ${
-          STATUS_STYLES[order.status] || 'bg-gray-100'
-        }`}
-      >
-        {order.status}
-      </span>
-      {order.status === 'confirmed' && (
-        <button
-          onClick={handleDeliver}
-          disabled={delivering}
-          className="text-xs font-semibold px-3 py-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 shrink-0"
-        >
-          {delivering ? 'Marking...' : 'Mark Delivered'}
-        </button>
-      )}
-      <span className="font-bold text-gray-900 shrink-0">₹{order.total_price.toFixed(2)}</span>
-    </div>
+    </>
   );
 }

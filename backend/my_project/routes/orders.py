@@ -14,6 +14,8 @@ from schemas import (
     BatchPaymentVerifyRequest,
     OrderCreate,
     OrderOut,
+    OrderStatusLogOut,
+    OrderStatusUpdate,
     PaymentDetailsOut,
     PaymentVerifyRequest,
     PaymentStatusOut,
@@ -320,5 +322,74 @@ def cancel_order(
     db.commit()
     db.refresh(order, ["tree"])
     return order
+
+
+@router.post("/{order_id}/status", response_model=OrderOut)
+def update_order_status(
+    order_id: uuid.UUID,
+    body: OrderStatusUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_user),
+):
+    """Renter confirms receipt: delivered -> completed."""
+    order = crud.get_order(db, order_id)
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    if order.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    allowed = {"delivered": ["completed"]}
+    if body.new_status not in allowed.get(order.status, []):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot move from '{order.status}' to '{body.new_status}'",
+        )
+
+    old_status = order.status
+    order.status = body.new_status
+    db.commit()
+
+    crud.create_status_log(db, {
+        "order_id": order_id,
+        "old_status": old_status,
+        "new_status": body.new_status,
+        "changed_by": current_user.id,
+        "note": "Renter confirmed receipt",
+    })
+
+    # Notify the owner
+    tree = crud.get_tree(db, order.tree_id)
+    if tree and tree.owner_id:
+        crud.create_notification(db, {
+            "user_id": tree.owner_id,
+            "type": "status_change",
+            "title": "Order completed",
+            "message": f"The renter confirmed receipt for {tree.name}.",
+            "order_id": order_id,
+        })
+
+    db.refresh(order, ["tree"])
+    return order
+
+
+@router.get("/{order_id}/status-log", response_model=list[OrderStatusLogOut])
+def get_order_status_log(
+    order_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_user),
+):
+    order = crud.get_order(db, order_id)
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    tree = crud.get_tree(db, order.tree_id)
+    is_owner = tree and tree.owner_id == current_user.id
+    is_renter = order.user_id == current_user.id
+
+    if not is_owner and not is_renter:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    return crud.get_status_logs_for_order(db, order_id)
 
 

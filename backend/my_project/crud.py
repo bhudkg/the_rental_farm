@@ -4,7 +4,7 @@ import uuid
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from models import Order, OwnerRating, Tree, TreeTrendingScore, User, Wishlist
+from models import Notification, Order, OrderStatusLog, OrderUpdate, OwnerRating, Tree, TreeTrendingScore, User, Wishlist
 
 _EARTH_RADIUS_KM = 6371.0
 
@@ -326,6 +326,104 @@ def get_wishlist_for_user(db: Session, user_id: uuid.UUID) -> list[Tree]:
 
 def get_wishlist_count(db: Session, tree_id: uuid.UUID) -> int:
     return db.query(func.count(Wishlist.id)).filter(Wishlist.tree_id == tree_id).scalar() or 0
+
+
+# ── Order Updates ──
+
+def create_order_update(db: Session, data: dict) -> OrderUpdate:
+    update = OrderUpdate(**data)
+    db.add(update)
+    db.commit()
+    db.refresh(update)
+    return update
+
+
+def get_updates_for_order(db: Session, order_id: uuid.UUID) -> list[OrderUpdate]:
+    return (
+        db.query(OrderUpdate)
+        .filter(OrderUpdate.order_id == order_id)
+        .order_by(OrderUpdate.week_number.desc())
+        .all()
+    )
+
+
+def get_update_for_week(db: Session, order_id: uuid.UUID, week_number: int) -> OrderUpdate | None:
+    return (
+        db.query(OrderUpdate)
+        .filter(OrderUpdate.order_id == order_id, OrderUpdate.week_number == week_number)
+        .first()
+    )
+
+
+# ── Notifications ──
+
+def create_notification(db: Session, data: dict) -> Notification:
+    notif = Notification(**data)
+    db.add(notif)
+    db.commit()
+    db.refresh(notif)
+    return notif
+
+
+def get_notifications_for_user(db: Session, user_id: uuid.UUID, skip: int = 0, limit: int = 20) -> list[Notification]:
+    return (
+        db.query(Notification)
+        .filter(Notification.user_id == user_id)
+        .order_by(Notification.created_at.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+
+def get_unread_count(db: Session, user_id: uuid.UUID) -> int:
+    return (
+        db.query(func.count(Notification.id))
+        .filter(Notification.user_id == user_id, Notification.is_read == False)
+        .scalar() or 0
+    )
+
+
+def mark_notification_read(db: Session, notification_id: uuid.UUID, user_id: uuid.UUID) -> Notification | None:
+    notif = (
+        db.query(Notification)
+        .filter(Notification.id == notification_id, Notification.user_id == user_id)
+        .first()
+    )
+    if notif:
+        notif.is_read = True
+        db.commit()
+        db.refresh(notif)
+    return notif
+
+
+def mark_all_read(db: Session, user_id: uuid.UUID) -> int:
+    count = (
+        db.query(Notification)
+        .filter(Notification.user_id == user_id, Notification.is_read == False)
+        .update({"is_read": True})
+    )
+    db.commit()
+    return count
+
+
+# ── Order Status Log ──
+
+def create_status_log(db: Session, data: dict) -> OrderStatusLog:
+    log = OrderStatusLog(**data)
+    db.add(log)
+    db.commit()
+    db.refresh(log)
+    return log
+
+
+def get_status_logs_for_order(db: Session, order_id: uuid.UUID) -> list[OrderStatusLog]:
+    return (
+        db.query(OrderStatusLog)
+        .filter(OrderStatusLog.order_id == order_id)
+        .order_by(OrderStatusLog.created_at.asc())
+        .all()
+    )
 
 
 # ── Trending ──

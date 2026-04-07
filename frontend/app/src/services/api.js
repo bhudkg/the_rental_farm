@@ -153,6 +153,42 @@ export const fetchOwnerStats = () => api.get('/owner/stats').then((r) => r.data)
 export const markOrderDelivered = (orderId) =>
   api.post(`/owner/orders/${orderId}/deliver`).then((r) => r.data);
 
+export const activateOrder = (orderId) =>
+  api.post(`/owner/orders/${orderId}/activate`).then((r) => r.data);
+
+export const fetchPendingUpdates = () =>
+  api.get('/owner/pending-updates').then((r) => r.data);
+
+// ── Order Updates ──
+
+export const postOrderUpdate = (orderId, data) =>
+  api.post(`/orders/${orderId}/updates`, data).then((r) => r.data);
+
+export const fetchOrderUpdates = (orderId) =>
+  api.get(`/orders/${orderId}/updates`).then((r) => r.data);
+
+// ── Order Status ──
+
+export const confirmReceipt = (orderId) =>
+  api.post(`/orders/${orderId}/status`, { new_status: 'completed' }).then((r) => r.data);
+
+export const fetchOrderStatusLog = (orderId) =>
+  api.get(`/orders/${orderId}/status-log`).then((r) => r.data);
+
+// ── Notifications ──
+
+export const fetchNotifications = (page = 1) =>
+  api.get(`/notifications?page=${page}`).then((r) => r.data);
+
+export const fetchUnreadCount = () =>
+  api.get('/notifications/unread-count').then((r) => r.data);
+
+export const markNotificationRead = (id) =>
+  api.put(`/notifications/${id}/read`).then((r) => r.data);
+
+export const markAllNotificationsRead = () =>
+  api.put('/notifications/read-all').then((r) => r.data);
+
 // ── Geocoding ──
 
 const MAPPLS_TOKEN = import.meta.env.VITE_MAPPLS_TOKEN;

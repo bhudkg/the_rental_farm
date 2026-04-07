@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { fetchOrder, checkCanRate, submitRating } from '../services/api';
+import { fetchOrder, checkCanRate, submitRating, confirmReceipt } from '../services/api';
+import StatusTracker from '../components/StatusTracker';
+import OrderTimeline from '../components/OrderTimeline';
 
 const STATUS_STYLES = {
   pending: 'bg-yellow-100 text-yellow-700',
@@ -15,12 +17,26 @@ export default function OrderDetail() {
   const { id } = useParams();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [confirming, setConfirming] = useState(false);
+
+  const loadOrder = () => fetchOrder(id).then(setOrder);
 
   useEffect(() => {
-    fetchOrder(id)
-      .then(setOrder)
-      .finally(() => setLoading(false));
+    loadOrder().finally(() => setLoading(false));
   }, [id]);
+
+  const handleConfirmReceipt = async () => {
+    if (confirming) return;
+    setConfirming(true);
+    try {
+      const updated = await confirmReceipt(id);
+      setOrder(updated);
+    } catch {
+      // stay on current state
+    } finally {
+      setConfirming(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -64,16 +80,8 @@ export default function OrderDetail() {
         </span>
       </div>
 
-      {/* Success banner */}
-      <div className="bg-green-50 border border-green-200 rounded-2xl p-6 mb-8 text-center">
-        <svg className="w-12 h-12 text-green-500 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        <h2 className="text-lg font-semibold text-green-800 mb-1">Booking Confirmed!</h2>
-        <p className="text-sm text-green-600">
-          Your tree rental has been booked successfully.
-        </p>
-      </div>
+      {/* Status tracker */}
+      <StatusTracker orderId={order.id} currentStatus={order.status} createdAt={order.created_at} />
 
       {/* Tree info */}
       {order.tree && (
@@ -113,7 +121,29 @@ export default function OrderDetail() {
         </div>
       </div>
 
-      {order.status === 'delivered' && <RatingSection orderId={order.id} />}
+      {/* Confirm receipt button for renter */}
+      {order.status === 'delivered' && (
+        <div className="mt-6 bg-amber-50 border border-amber-200 rounded-2xl p-5 flex items-center justify-between">
+          <div>
+            <p className="font-semibold text-amber-900">Order delivered</p>
+            <p className="text-sm text-amber-700">Please confirm that you have received everything.</p>
+          </div>
+          <button
+            onClick={handleConfirmReceipt}
+            disabled={confirming}
+            className="px-5 py-2 bg-green-600 text-white font-medium rounded-xl hover:bg-green-700 transition-colors disabled:opacity-50 shrink-0"
+          >
+            {confirming ? 'Confirming...' : 'Confirm Receipt'}
+          </button>
+        </div>
+      )}
+
+      {/* Weekly updates timeline */}
+      <OrderTimeline orderId={order.id} status={order.status} />
+
+      {(order.status === 'delivered' || order.status === 'completed') && (
+        <RatingSection orderId={order.id} />
+      )}
 
       <div className="mt-8 text-center">
         <Link

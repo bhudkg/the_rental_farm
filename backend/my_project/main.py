@@ -7,7 +7,8 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from database import Base, SessionLocal, engine, get_db
-from routes import addresses, auth, images, orders, owner, ratings, trees, webhooks, wishlist
+from routes import addresses, auth, images, notifications, orders, owner, ratings, trees, updates, webhooks, wishlist
+from scheduler import start_scheduler
 from seed import seed_trees
 from trending import recompute_trending_scores
 
@@ -23,7 +24,11 @@ async def lifespan(app: FastAPI):
         recompute_trending_scores(db)
     finally:
         db.close()
+
+    bg_scheduler = start_scheduler()
     yield
+    if bg_scheduler:
+        bg_scheduler.shutdown(wait=False)
 
 
 app = FastAPI(title="The Rental Farm", lifespan=lifespan)
@@ -45,6 +50,8 @@ app.include_router(images.router)
 app.include_router(webhooks.router)
 app.include_router(wishlist.router)
 app.include_router(ratings.router)
+app.include_router(updates.router)
+app.include_router(notifications.router)
 
 
 @app.get("/")

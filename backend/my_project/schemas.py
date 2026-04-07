@@ -180,6 +180,7 @@ class OrderOut(BaseModel):
     payment_captured_at: datetime | None = None
     refund_id: str | None = None
     refunded_at: datetime | None = None
+    active_since: datetime | None = None
 
     model_config = {"from_attributes": True}
 
@@ -321,7 +322,68 @@ class OwnerProfileOut(BaseModel):
     bank_ifsc: str | None = None
     upi_id: str | None = None
     is_verified: bool
+    penalty_score: float = 0.0
     created_at: datetime
     updated_at: datetime | None = None
+
+    model_config = {"from_attributes": True}
+
+
+# ── Order Updates ──
+
+class OrderUpdateCreate(BaseModel):
+    media_url: str
+    media_type: str = Field(..., pattern="^(image|video)$")
+    caption: str | None = None
+    duration_seconds: int | None = None
+
+
+class OrderUpdateOut(BaseModel):
+    id: uuid.UUID
+    order_id: uuid.UUID
+    owner_id: uuid.UUID
+    media_url: str
+    media_type: str
+    caption: str | None = None
+    week_number: int
+    duration_seconds: int | None = None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+# ── Notifications ──
+
+class NotificationOut(BaseModel):
+    id: uuid.UUID
+    user_id: uuid.UUID
+    type: str
+    title: str
+    message: str
+    order_id: uuid.UUID | None = None
+    is_read: bool
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class UnreadCountOut(BaseModel):
+    count: int
+
+
+# ── Order Status ──
+
+class OrderStatusUpdate(BaseModel):
+    new_status: str
+
+
+class OrderStatusLogOut(BaseModel):
+    id: uuid.UUID
+    order_id: uuid.UUID
+    old_status: str
+    new_status: str
+    changed_by: uuid.UUID
+    note: str | None = None
+    created_at: datetime
 
     model_config = {"from_attributes": True}

@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -62,14 +63,79 @@ def mark_order_delivered(
             detail="Not authorized — you don't own this tree",
         )
 
+    if order.status not in ("confirmed", "active"):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Only confirmed or active orders can be marked as delivered (current: {order.status})",
+        )
+
+    old_status = order.status
+    order.status = "delivered"
+    db.commit()
+
+    crud.create_status_log(db, {
+        "order_id": order_id,
+        "old_status": old_status,
+        "new_status": "delivered",
+        "changed_by": owner.id,
+        "note": "Owner marked as delivered",
+    })
+
+    crud.create_notification(db, {
+        "user_id": order.user_id,
+        "type": "status_change",
+        "title": "Order delivered",
+        "message": f"Your tree rental for {tree.name} has been marked as delivered.",
+        "order_id": order_id,
+    })
+
+    db.refresh(order, ["tree"])
+    return order
+
+
+@router.post("/orders/{order_id}/activate", response_model=OrderOut)
+def activate_order(
+    order_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    owner: User = Depends(require_user),
+):
+    order = crud.get_order(db, order_id)
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    tree = crud.get_tree(db, order.tree_id)
+    if not tree or tree.owner_id != owner.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized — you don't own this tree",
+        )
+
     if order.status != "confirmed":
         raise HTTPException(
             status_code=400,
-            detail=f"Only confirmed orders can be marked as delivered (current: {order.status})",
+            detail=f"Only confirmed orders can be activated (current: {order.status})",
         )
 
-    order.status = "delivered"
+    order.status = "active"
+    order.active_since = datetime.now(timezone.utc)
     db.commit()
+
+    crud.create_status_log(db, {
+        "order_id": order_id,
+        "old_status": "confirmed",
+        "new_status": "active",
+        "changed_by": owner.id,
+        "note": "Owner started the season",
+    })
+
+    crud.create_notification(db, {
+        "user_id": order.user_id,
+        "type": "status_change",
+        "title": "Tree season started!",
+        "message": f"The owner has started caring for your {tree.name}. Weekly updates will follow.",
+        "order_id": order_id,
+    })
+
     db.refresh(order, ["tree"])
     return order
 

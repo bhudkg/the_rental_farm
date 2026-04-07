@@ -67,7 +67,7 @@ export default function OwnerTrees() {
               className="flex items-center gap-4 p-5 bg-white border border-gray-100 rounded-2xl hover:shadow-md transition-shadow"
             >
               <img
-                src={tree.image_urls?.[0] || tree.image_url || 'https://via.placeholder.com/80'}
+                src={tree.image_urls?.[0] || tree.image_url}
                 alt={tree.name}
                 className="w-20 h-20 rounded-xl object-cover flex-shrink-0"
               />

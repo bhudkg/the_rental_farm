@@ -1,27 +1,56 @@
 const CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
 const UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
 
-const UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`;
+const IMAGE_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`;
+const VIDEO_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/video/upload`;
 
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
-const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/webm'];
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5 MB
+const MAX_VIDEO_SIZE = 50 * 1024 * 1024; // 50 MB
+const MAX_VIDEO_DURATION = 60; // seconds
 
 export function validateImage(file) {
-  if (!ALLOWED_TYPES.includes(file.type)) {
+  if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
     return 'Only JPG, PNG, and WebP images are allowed.';
   }
-  if (file.size > MAX_SIZE_BYTES) {
+  if (file.size > MAX_IMAGE_SIZE) {
     return 'Image must be smaller than 5 MB.';
   }
   return null;
 }
 
-export async function uploadToCloudinary(file, onProgress) {
-  const error = validateImage(file);
-  if (error) throw new Error(error);
+export function validateVideo(file) {
+  if (!ALLOWED_VIDEO_TYPES.includes(file.type)) {
+    return 'Only MP4 and WebM videos are allowed.';
+  }
+  if (file.size > MAX_VIDEO_SIZE) {
+    return 'Video must be smaller than 50 MB.';
+  }
+  return null;
+}
 
+export function getVideoDuration(file) {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement('video');
+    video.preload = 'metadata';
+    video.onloadedmetadata = () => {
+      URL.revokeObjectURL(video.src);
+      resolve(Math.round(video.duration));
+    };
+    video.onerror = () => {
+      URL.revokeObjectURL(video.src);
+      reject(new Error('Could not read video metadata'));
+    };
+    video.src = URL.createObjectURL(file);
+  });
+}
+
+function _upload(url, file, onProgress) {
   if (!CLOUD_NAME || !UPLOAD_PRESET) {
-    throw new Error('Cloudinary is not configured. Set VITE_CLOUDINARY_CLOUD_NAME and VITE_CLOUDINARY_UPLOAD_PRESET.');
+    return Promise.reject(
+      new Error('Cloudinary is not configured. Set VITE_CLOUDINARY_CLOUD_NAME and VITE_CLOUDINARY_UPLOAD_PRESET.'),
+    );
   }
 
   const formData = new FormData();
@@ -31,7 +60,7 @@ export async function uploadToCloudinary(file, onProgress) {
   const xhr = new XMLHttpRequest();
 
   return new Promise((resolve, reject) => {
-    xhr.open('POST', UPLOAD_URL);
+    xhr.open('POST', url);
 
     xhr.upload.addEventListener('progress', (e) => {
       if (e.lengthComputable && onProgress) {
@@ -42,7 +71,7 @@ export async function uploadToCloudinary(file, onProgress) {
     xhr.addEventListener('load', () => {
       if (xhr.status >= 200 && xhr.status < 300) {
         const data = JSON.parse(xhr.responseText);
-        resolve(data.secure_url);
+        resolve(data);
       } else {
         let msg = 'Upload failed';
         try {
@@ -57,4 +86,25 @@ export async function uploadToCloudinary(file, onProgress) {
 
     xhr.send(formData);
   });
+}
+
+export async function uploadToCloudinary(file, onProgress) {
+  const error = validateImage(file);
+  if (error) throw new Error(error);
+
+  const data = await _upload(IMAGE_UPLOAD_URL, file, onProgress);
+  return data.secure_url;
+}
+
+export async function uploadVideoToCloudinary(file, onProgress) {
+  const error = validateVideo(file);
+  if (error) throw new Error(error);
+
+  const duration = await getVideoDuration(file);
+  if (duration > MAX_VIDEO_DURATION) {
+    throw new Error(`Video must be ${MAX_VIDEO_DURATION} seconds or less (yours is ${duration}s).`);
+  }
+
+  const data = await _upload(VIDEO_UPLOAD_URL, file, onProgress);
+  return { url: data.secure_url, duration };
 }

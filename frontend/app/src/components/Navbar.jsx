@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import useStore from '../store/useStore';
+import NotificationBell from './NotificationBell';
 
 export default function Navbar() {
   const location = useLocation();
@@ -118,6 +119,7 @@ export default function Navbar() {
                 Register Tree
               </Link>
               <CartButton count={getCartCount()} onClick={() => setCartDrawerOpen(true)} />
+              {token && <NotificationBell />}
             </div>
 
             {token ? (
