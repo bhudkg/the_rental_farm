@@ -1,6 +1,31 @@
+import os
+
 from sqlalchemy.orm import Session
 
 from models import Tree
+
+SEED_IMAGE_BASE_URL = os.getenv(
+    "SEED_IMAGE_BASE_URL", "https://images.unsplash.com"
+)
+
+SEED_IMAGES = {
+    "alphonso_mango": f"{SEED_IMAGE_BASE_URL}/photo-1553279768-865429fa0078?w=800",
+    "dasheri_mango": f"{SEED_IMAGE_BASE_URL}/photo-1601493700631-2b16ec4b4716?w=800",
+    "langra_mango": f"{SEED_IMAGE_BASE_URL}/photo-1591073113125-e46713c829ed?w=800",
+    "cavendish_banana": f"{SEED_IMAGE_BASE_URL}/photo-1603833665858-e61d17a86224?w=800",
+    "red_banana": f"{SEED_IMAGE_BASE_URL}/photo-1571771894821-ce9b6c11b08e?w=800",
+    "nagpur_orange": f"{SEED_IMAGE_BASE_URL}/photo-1582979512210-99b6a53386f9?w=800",
+    "kagzi_lemon": f"{SEED_IMAGE_BASE_URL}/photo-1622383563227-04401ab4e5ea?w=800",
+    "coconut_palm": f"{SEED_IMAGE_BASE_URL}/photo-1509937528035-ad76254b0356?w=800",
+    "safeda_guava": f"{SEED_IMAGE_BASE_URL}/photo-1536511132770-e5058c7e8c46?w=800",
+    "kashmiri_apple": f"{SEED_IMAGE_BASE_URL}/photo-1570913149827-d2ac84ab3f9a?w=800",
+    "red_lady_papaya": f"{SEED_IMAGE_BASE_URL}/photo-1526318472351-c75fcf070305?w=800",
+    "bhagwa_pomegranate": f"{SEED_IMAGE_BASE_URL}/photo-1615485290382-441e4d049cb5?w=800",
+    "konkan_jackfruit": f"{SEED_IMAGE_BASE_URL}/photo-1528825871115-3581a5e0791d?w=800",
+    "cricket_ball_chiku": f"{SEED_IMAGE_BASE_URL}/photo-1478145046317-39f10e56b5e9?w=800",
+    "kesar_mango": f"{SEED_IMAGE_BASE_URL}/photo-1563114773-84221bd62daa?w=800",
+    "mosambi_sweet_lime": f"{SEED_IMAGE_BASE_URL}/photo-1611080626919-7cf5a9dbab5b?w=800",
+}
 
 SEED_TREES = [
     {
@@ -16,7 +41,7 @@ SEED_TREES = [
         "price_per_season": 4500.0,
         "size": "Large (5-6 ft)",
         "min_quantity": 5,
-        "image_url": "https://images.unsplash.com/photo-1553279768-865429fa0078?w=800",
+        "image_url": SEED_IMAGES["alphonso_mango"],
     },
     {
         "name": "Dasheri Mango Tree",
@@ -31,7 +56,7 @@ SEED_TREES = [
         "price_per_season": 4000.0,
         "size": "Large (5-6 ft)",
         "min_quantity": 5,
-        "image_url": "https://images.unsplash.com/photo-1601493700631-2b16ec4b4716?w=800",
+        "image_url": SEED_IMAGES["dasheri_mango"],
     },
     {
         "name": "Langra Mango Tree",
@@ -46,7 +71,7 @@ SEED_TREES = [
         "price_per_season": 3500.0,
         "size": "Large (6-8 ft)",
         "min_quantity": 3,
-        "image_url": "https://images.unsplash.com/photo-1591073113125-e46713c829ed?w=800",
+        "image_url": SEED_IMAGES["langra_mango"],
     },
     {
         "name": "Cavendish Banana Plant",
@@ -61,7 +86,7 @@ SEED_TREES = [
         "price_per_season": 2800.0,
         "size": "Large (6-8 ft)",
         "min_quantity": 10,
-        "image_url": "https://images.unsplash.com/photo-1603833665858-e61d17a86224?w=800",
+        "image_url": SEED_IMAGES["cavendish_banana"],
     },
     {
         "name": "Red Banana Plant",
@@ -76,7 +101,7 @@ SEED_TREES = [
         "price_per_season": 3200.0,
         "size": "Medium (4-5 ft)",
         "min_quantity": 5,
-        "image_url": "https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=800",
+        "image_url": SEED_IMAGES["red_banana"],
     },
     {
         "name": "Nagpur Orange Tree",
@@ -91,7 +116,7 @@ SEED_TREES = [
         "price_per_season": 3500.0,
         "size": "Medium (4-5 ft)",
         "min_quantity": 5,
-        "image_url": "https://images.unsplash.com/photo-1582979512210-99b6a53386f9?w=800",
+        "image_url": SEED_IMAGES["nagpur_orange"],
     },
     {
         "name": "Kagzi Lemon Tree",
@@ -106,7 +131,7 @@ SEED_TREES = [
         "price_per_season": 2200.0,
         "size": "Medium (3-4 ft)",
         "min_quantity": 5,
-        "image_url": "https://images.unsplash.com/photo-1622383563227-04401ab4e5ea?w=800",
+        "image_url": SEED_IMAGES["kagzi_lemon"],
     },
     {
         "name": "Tall Coconut Palm",
@@ -121,7 +146,7 @@ SEED_TREES = [
         "price_per_season": 5500.0,
         "size": "Extra Large (7-8 ft)",
         "min_quantity": 3,
-        "image_url": "https://images.unsplash.com/photo-1509937528035-ad76254b0356?w=800",
+        "image_url": SEED_IMAGES["coconut_palm"],
     },
     {
         "name": "Allahabad Safeda Guava",
@@ -136,7 +161,7 @@ SEED_TREES = [
         "price_per_season": 2600.0,
         "size": "Medium (3-4 ft)",
         "min_quantity": 5,
-        "image_url": "https://images.unsplash.com/photo-1536511132770-e5058c7e8c46?w=800",
+        "image_url": SEED_IMAGES["safeda_guava"],
     },
     {
         "name": "Kashmiri Apple Tree",
@@ -151,7 +176,7 @@ SEED_TREES = [
         "price_per_season": 5000.0,
         "size": "Large (5-6 ft)",
         "min_quantity": 3,
-        "image_url": "https://images.unsplash.com/photo-1570913149827-d2ac84ab3f9a?w=800",
+        "image_url": SEED_IMAGES["kashmiri_apple"],
     },
     {
         "name": "Red Lady Papaya",
@@ -166,7 +191,7 @@ SEED_TREES = [
         "price_per_season": 1800.0,
         "size": "Medium (4-5 ft)",
         "min_quantity": 10,
-        "image_url": "https://images.unsplash.com/photo-1526318472351-c75fcf070305?w=800",
+        "image_url": SEED_IMAGES["red_lady_papaya"],
     },
     {
         "name": "Bhagwa Pomegranate",
@@ -181,7 +206,7 @@ SEED_TREES = [
         "price_per_season": 3600.0,
         "size": "Medium (3-4 ft)",
         "min_quantity": 5,
-        "image_url": "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?w=800",
+        "image_url": SEED_IMAGES["bhagwa_pomegranate"],
     },
     {
         "name": "Konkan Jackfruit Tree",
@@ -196,7 +221,7 @@ SEED_TREES = [
         "price_per_season": 4000.0,
         "size": "Large (6-8 ft)",
         "min_quantity": 2,
-        "image_url": "https://images.unsplash.com/photo-1528825871115-3581a5e0791d?w=800",
+        "image_url": SEED_IMAGES["konkan_jackfruit"],
     },
     {
         "name": "Cricket Ball Chiku",
@@ -211,7 +236,7 @@ SEED_TREES = [
         "price_per_season": 2500.0,
         "size": "Medium (3-4 ft)",
         "min_quantity": 5,
-        "image_url": "https://images.unsplash.com/photo-1478145046317-39f10e56b5e9?w=800",
+        "image_url": SEED_IMAGES["cricket_ball_chiku"],
     },
     {
         "name": "Kesar Mango Tree",
@@ -226,7 +251,7 @@ SEED_TREES = [
         "price_per_season": 4200.0,
         "size": "Large (5-6 ft)",
         "min_quantity": 5,
-        "image_url": "https://images.unsplash.com/photo-1563114773-84221bd62daa?w=800",
+        "image_url": SEED_IMAGES["kesar_mango"],
     },
     {
         "name": "Mosambi Sweet Lime Tree",
@@ -241,7 +266,7 @@ SEED_TREES = [
         "price_per_season": 3200.0,
         "size": "Medium (3-4 ft)",
         "min_quantity": 5,
-        "image_url": "https://images.unsplash.com/photo-1611080626919-7cf5a9dbab5b?w=800",
+        "image_url": SEED_IMAGES["mosambi_sweet_lime"],
     },
 ]
 

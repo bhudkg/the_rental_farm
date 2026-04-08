@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { PLACEHOLDER_TREE_IMG } from '../constants/images';
 
 const TYPE_COLORS = {
   mango: 'bg-yellow-100 text-yellow-700',
@@ -16,11 +17,10 @@ const TYPE_COLORS = {
   chiku: 'bg-amber-50 text-amber-600',
 };
 
-const PLACEHOLDER_IMG = 'https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=400&q=80';
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 export default function TreeListItem({ tree, isActive, onHover }) {
-  const images = tree.image_urls?.length ? tree.image_urls : [tree.image_url || PLACEHOLDER_IMG];
+  const images = tree.image_urls?.length ? tree.image_urls : [tree.image_url || PLACEHOLDER_TREE_IMG];
   const [imgIdx, setImgIdx] = useState(0);
 
   const goImg = (dir, e) => {
@@ -45,7 +45,7 @@ export default function TreeListItem({ tree, isActive, onHover }) {
           alt={tree.name}
           className="w-full h-full object-cover"
           loading="lazy"
-          onError={(e) => { e.target.src = PLACEHOLDER_IMG; }}
+          onError={(e) => { e.target.src = PLACEHOLDER_TREE_IMG; }}
         />
         {images.length > 1 && (
           <>

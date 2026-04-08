@@ -2,8 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import useStore, { DELIVERY_FEE } from '../store/useStore';
 import CheckoutModal from './CheckoutModal';
-
-const PLACEHOLDER_IMG = 'https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=200&q=60';
+import { PLACEHOLDER_TREE_IMG } from '../constants/images';
 
 export default function CartDrawer() {
   const { cart, cartDrawerOpen, setCartDrawerOpen, removeFromCart, getCartTotal, getCartCount } = useStore();
@@ -90,7 +89,7 @@ export default function CartDrawer() {
                 {/* Items */}
                 <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
                   {cart.map(({ tree }) => {
-                    const img = tree.image_urls?.[0] || tree.image_url || PLACEHOLDER_IMG;
+                    const img = tree.image_urls?.[0] || tree.image_url || PLACEHOLDER_TREE_IMG;
                     const price = Number(tree.price_per_season) || 0;
                     const itemTotal = price + DELIVERY_FEE;
                     const locationParts = [tree.city, tree.state].filter(Boolean);
@@ -106,7 +105,7 @@ export default function CartDrawer() {
                             src={img}
                             alt={tree.name}
                             className="w-16 h-16 rounded-lg object-cover"
-                            onError={(e) => { e.target.src = PLACEHOLDER_IMG; }}
+                            onError={(e) => { e.target.src = PLACEHOLDER_TREE_IMG; }}
                           />
                         </Link>
                         <div className="flex-1 min-w-0">
