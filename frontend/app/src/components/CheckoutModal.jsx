@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { createBatchOrder, verifyBatchPayment, updatePhone } from '../services/api';
 import AddressPickerCheckout from './AddressPickerCheckout';
 import useStore, { DELIVERY_FEE } from '../store/useStore';
-
-const PLACEHOLDER_IMG = 'https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=200&q=60';
+import { PLACEHOLDER_TREE_IMG } from '../constants/images';
 
 export default function CheckoutModal({ onClose }) {
   const navigate = useNavigate();
@@ -177,7 +176,7 @@ export default function CheckoutModal({ onClose }) {
           {/* Cart items */}
           <div className="space-y-3">
             {cart.map(({ tree }) => {
-              const img = tree.image_urls?.[0] || tree.image_url || PLACEHOLDER_IMG;
+              const img = tree.image_urls?.[0] || tree.image_url || PLACEHOLDER_TREE_IMG;
               const price = Number(tree.price_per_season) || 0;
               const itemTotal = price + DELIVERY_FEE;
 
@@ -187,7 +186,7 @@ export default function CheckoutModal({ onClose }) {
                     src={img}
                     alt={tree.name}
                     className="w-14 h-14 rounded-xl object-cover border border-gray-100 shrink-0"
-                    onError={(e) => { e.target.src = PLACEHOLDER_IMG; }}
+                    onError={(e) => { e.target.src = PLACEHOLDER_TREE_IMG; }}
                   />
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-gray-900 text-sm truncate">{tree.name}</h3>

@@ -4,8 +4,7 @@ import BookingModal from '../components/BookingModal';
 import MapplsMap from '../components/MapplsMap';
 import { fetchTree, toggleWishlist, fetchOwnerRatings } from '../services/api';
 import useStore, { DELIVERY_FEE } from '../store/useStore';
-
-const PLACEHOLDER_IMG = 'https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=800&q=80';
+import { PLACEHOLDER_TREE_IMG } from '../constants/images';
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 export default function TreeDetail() {
@@ -77,7 +76,7 @@ export default function TreeDetail() {
     );
   }
 
-  const images = tree.image_urls?.length ? tree.image_urls : (tree.image_url ? [tree.image_url] : [PLACEHOLDER_IMG]);
+  const images = tree.image_urls?.length ? tree.image_urls : (tree.image_url ? [tree.image_url] : [PLACEHOLDER_TREE_IMG]);
   const locationParts = [tree.location, tree.city, tree.state].filter(Boolean);
   const seasonText = tree.season_start && tree.season_end
     ? `${MONTHS[tree.season_start - 1]} – ${MONTHS[tree.season_end - 1]}`
@@ -115,14 +114,14 @@ export default function TreeDetail() {
                 alt=""
                 aria-hidden="true"
                 className="absolute inset-0 w-full h-full object-cover blur-md scale-110 opacity-35 transition-all duration-300"
-                onError={(e) => { e.target.src = PLACEHOLDER_IMG; }}
+                onError={(e) => { e.target.src = PLACEHOLDER_TREE_IMG; }}
               />
               <img
                 src={images[activeImg]}
                 alt={tree.name}
                 className="relative z-10 w-full h-full object-contain cursor-pointer transition-all duration-300"
                 onClick={() => setShowAllPhotos(true)}
-                onError={(e) => { e.target.src = PLACEHOLDER_IMG; }}
+                onError={(e) => { e.target.src = PLACEHOLDER_TREE_IMG; }}
               />
               <button
                 type="button"
@@ -151,8 +150,8 @@ export default function TreeDetail() {
             </div>
           ) : (
             <button type="button" onClick={() => setShowAllPhotos(true)} className="relative w-full h-[280px] sm:h-[400px] cursor-pointer overflow-hidden bg-gray-100">
-              <img src={images[0]} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover blur-md scale-110 opacity-35" onError={(e) => { e.target.src = PLACEHOLDER_IMG; }} />
-              <img src={images[0]} alt={tree.name} className="relative z-10 w-full h-full object-contain" onError={(e) => { e.target.src = PLACEHOLDER_IMG; }} />
+              <img src={images[0]} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover blur-md scale-110 opacity-35" onError={(e) => { e.target.src = PLACEHOLDER_TREE_IMG; }} />
+              <img src={images[0]} alt={tree.name} className="relative z-10 w-full h-full object-contain" onError={(e) => { e.target.src = PLACEHOLDER_TREE_IMG; }} />
             </button>
           )}
 
@@ -180,7 +179,7 @@ export default function TreeDetail() {
                 onClick={() => setActiveImg(idx)}
                 className={`shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${idx === activeImg ? 'border-primary ring-2 ring-primary/20' : 'border-transparent opacity-60 hover:opacity-90'}`}
               >
-                <img src={url} alt="" className="w-full h-full object-cover" onError={(e) => { e.target.src = PLACEHOLDER_IMG; }} />
+                <img src={url} alt="" className="w-full h-full object-cover" onError={(e) => { e.target.src = PLACEHOLDER_TREE_IMG; }} />
               </button>
             ))}
           </div>

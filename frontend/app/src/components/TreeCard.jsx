@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { toggleWishlist } from '../services/api';
 import useStore from '../store/useStore';
+import { PLACEHOLDER_TREE_IMG } from '../constants/images';
 
 const TYPE_COLORS = {
   mango: 'bg-yellow-100 text-yellow-700',
@@ -18,7 +19,6 @@ const TYPE_COLORS = {
   chiku: 'bg-amber-50 text-amber-600',
 };
 
-const PLACEHOLDER_IMG = 'https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=400&q=80';
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 function seasonLabel(tree) {
@@ -27,7 +27,7 @@ function seasonLabel(tree) {
 }
 
 function imgSrc(tree) {
-  return tree.image_urls?.[0] || tree.image_url || PLACEHOLDER_IMG;
+  return tree.image_urls?.[0] || tree.image_url || PLACEHOLDER_TREE_IMG;
 }
 
 function priceText(tree) {
@@ -152,7 +152,7 @@ export function TreeCardA({ tree }) {
           alt={tree.name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           loading="lazy"
-          onError={(e) => { e.target.src = PLACEHOLDER_IMG; }}
+          onError={(e) => { e.target.src = PLACEHOLDER_TREE_IMG; }}
         />
         <div className="absolute top-2 right-2 z-10">
           <WishlistButton tree={tree} className="bg-white/80 backdrop-blur-sm rounded-full p-1.5 shadow-sm hover:bg-white transition-colors" />
@@ -229,7 +229,7 @@ export function TreeCardB({ tree }) {
           alt={tree.name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           loading="lazy"
-          onError={(e) => { e.target.src = PLACEHOLDER_IMG; }}
+          onError={(e) => { e.target.src = PLACEHOLDER_TREE_IMG; }}
         />
         <div className="absolute top-2.5 left-2.5 z-10">
           <WishlistButton tree={tree} className="bg-white/80 backdrop-blur-sm rounded-full p-1.5 shadow-sm hover:bg-white transition-colors" />
@@ -343,7 +343,7 @@ export function TreeCardC({ tree }) {
           alt={tree.name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           loading="lazy"
-          onError={(e) => { e.target.src = PLACEHOLDER_IMG; }}
+          onError={(e) => { e.target.src = PLACEHOLDER_TREE_IMG; }}
         />
         <div className="absolute top-2.5 right-2.5 z-10">
           <WishlistButton tree={tree} className="bg-white/80 backdrop-blur-sm rounded-full p-1.5 shadow-sm hover:bg-white transition-colors" />

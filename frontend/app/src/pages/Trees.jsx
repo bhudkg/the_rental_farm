@@ -3,22 +3,11 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import MapplsMap from '../components/MapplsMap';
 import TreeCard from '../components/TreeCard';
 import { fetchTrees, fetchFilterOptions } from '../services/api';
+import { FRUIT_CATEGORIES } from '../constants/images';
 
-const CATEGORIES = [
-  { type: null, label: 'All', img: 'https://img.icons8.com/color/96/deciduous-tree.png' },
-  { type: 'mango', label: 'Mango', img: 'https://img.icons8.com/color/96/mango.png' },
-  { type: 'banana', label: 'Banana', img: 'https://img.icons8.com/color/96/banana.png' },
-  { type: 'orange', label: 'Orange', img: 'https://img.icons8.com/color/96/orange.png' },
-  { type: 'lemon', label: 'Lemon', img: 'https://img.icons8.com/color/96/citrus.png' },
-  { type: 'coconut', label: 'Coconut', img: 'https://img.icons8.com/color/96/coconut.png' },
-  { type: 'guava', label: 'Guava', img: 'https://img.icons8.com/color/96/pear.png' },
-  { type: 'grapes', label: 'Grapes', img: 'https://img.icons8.com/color/96/grapes.png' },
-  { type: 'apple', label: 'Apple', img: 'https://img.icons8.com/color/96/apple.png' },
-  { type: 'papaya', label: 'Papaya', img: 'https://img.icons8.com/color/96/papaya.png' },
-  { type: 'pomegranate', label: 'Pomegranate', img: 'https://img.icons8.com/color/96/pomegranate.png' },
-  { type: 'jackfruit', label: 'Jackfruit', img: 'https://img.icons8.com/color/96/pineapple.png' },
-  { type: 'chiku', label: 'Chiku', img: 'https://img.icons8.com/color/96/kiwi.png' },
-];
+const CATEGORIES = FRUIT_CATEGORIES.map((c) =>
+  c.type === null ? { ...c, label: 'All' } : c,
+);
 
 const PRICE_MIN = 1000;
 const PRICE_MAX = 100000;
