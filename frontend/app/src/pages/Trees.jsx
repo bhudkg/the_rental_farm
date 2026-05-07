@@ -4,6 +4,7 @@ import MapplsMap from '../components/MapplsMap';
 import TreeCard from '../components/TreeCard';
 import { fetchTrees, fetchFilterOptions } from '../services/api';
 import { FRUIT_CATEGORIES } from '../constants/images';
+import { Button, EmptyState, SkeletonTreeCard } from '../components/ui';
 
 const CATEGORIES = FRUIT_CATEGORIES.map((c) =>
   c.type === null ? { ...c, label: 'All' } : c,
@@ -389,23 +390,27 @@ export default function Trees() {
             {loading ? (
               <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {Array.from({ length: 9 }).map((_, i) => (
-                  <div key={i} className="bg-gray-100 rounded-2xl h-72 animate-pulse" />
+                  <SkeletonTreeCard key={i} />
                 ))}
               </div>
             ) : trees.length === 0 ? (
-              <div className="text-center py-20 bg-gray-50 rounded-2xl">
-                <svg className="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-                </svg>
-                <p className="text-gray-500 text-lg mb-1">No trees found</p>
-                <p className="text-gray-400 text-sm mb-4">Try adjusting your filters or search term.</p>
-                <button
-                  onClick={() => { setType(null); clearFilters(); }}
-                  className="text-primary font-medium text-sm hover:underline"
-                >
-                  Clear all & show everything
-                </button>
-              </div>
+              <EmptyState
+                icon={
+                  <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                  </svg>
+                }
+                title="No trees found"
+                description="Try adjusting your filters or search term."
+                action={
+                  <Button
+                    onClick={() => { setType(null); clearFilters(); }}
+                    variant="secondary"
+                  >
+                    Clear filters
+                  </Button>
+                }
+              />
             ) : viewMode === 'map' ? (
               <MapplsMap
                 height="600px"

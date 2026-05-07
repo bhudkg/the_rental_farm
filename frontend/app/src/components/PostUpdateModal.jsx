@@ -6,6 +6,7 @@ import {
   validateImage,
   validateVideo,
 } from '../services/cloudinary';
+import useModal from '../hooks/useModal';
 
 export default function PostUpdateModal({ orderId, weekNumber, treeName, onClose, onPosted }) {
   const [file, setFile] = useState(null);
@@ -16,6 +17,20 @@ export default function PostUpdateModal({ orderId, weekNumber, treeName, onClose
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
   const inputRef = useRef();
+
+  // Block close while uploading to prevent media orphans.
+  useModal({ open: true, onClose: uploading ? () => {} : onClose });
+
+  const isDirty = Boolean(file || caption.trim());
+
+  const handleClose = () => {
+    if (uploading) return;
+    if (isDirty) {
+      const ok = window.confirm('Discard your update? Your changes will be lost.');
+      if (!ok) return;
+    }
+    onClose();
+  };
 
   const handleFileChange = (e) => {
     const f = e.target.files?.[0];
@@ -77,20 +92,26 @@ export default function PostUpdateModal({ orderId, weekNumber, treeName, onClose
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="post-update-title"
+    >
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={handleClose} />
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto animate-fade-in-up">
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-gray-100">
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Post Weekly Update</h2>
+            <h2 id="post-update-title" className="text-lg font-bold text-gray-900">Post Weekly Update</h2>
             <p className="text-sm text-gray-500">
               Week {weekNumber} &middot; {treeName}
             </p>
           </div>
           <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            onClick={handleClose}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            aria-label="Close"
           >
             <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -169,9 +190,9 @@ export default function PostUpdateModal({ orderId, weekNumber, treeName, onClose
         {/* Footer */}
         <div className="p-5 border-t border-gray-100 flex justify-end gap-3">
           <button
-            onClick={onClose}
+            onClick={handleClose}
             disabled={uploading}
-            className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors disabled:opacity-50"
+            className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300"
           >
             Cancel
           </button>

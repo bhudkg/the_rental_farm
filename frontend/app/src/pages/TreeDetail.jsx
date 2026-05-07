@@ -5,6 +5,7 @@ import MapplsMap from '../components/MapplsMap';
 import { fetchTree, toggleWishlist, fetchOwnerRatings } from '../services/api';
 import useStore, { DELIVERY_FEE } from '../store/useStore';
 import { PLACEHOLDER_TREE_IMG } from '../constants/images';
+import { Breadcrumbs, Button, toast } from '../components/ui';
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 export default function TreeDetail() {
@@ -55,8 +56,16 @@ export default function TreeDetail() {
 
   const handleAddToCart = () => {
     if (!tree) return;
+    if (alreadyInCart) {
+      setCartDrawerOpen(true);
+      return;
+    }
     addToCart(tree);
     setJustAdded(true);
+    toast.success(`${tree.name} added to cart`, {
+      title: 'Added to cart',
+      duration: 2800,
+    });
     setTimeout(() => setJustAdded(false), 2000);
   };
 
@@ -95,15 +104,15 @@ export default function TreeDetail() {
 
   return (
     <>
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-5 pb-16">
-        {/* Breadcrumb */}
-        <nav className="flex items-center gap-1.5 text-sm text-gray-400 mb-4">
-          <Link to="/trees" className="hover:text-gray-600 transition-colors">Trees</Link>
-          <ChevronRight />
-          <span className="text-gray-500 capitalize">{tree.type}</span>
-          <ChevronRight />
-          <span className="text-gray-700 font-medium truncate max-w-[200px]">{tree.name}</span>
-        </nav>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-5 pb-32 lg:pb-16">
+        <Breadcrumbs
+          className="mb-4"
+          items={[
+            { to: '/', label: 'Home' },
+            { to: '/trees', label: 'Trees' },
+            { label: tree.name },
+          ]}
+        />
 
         {/* ── Image Gallery ── */}
         <div className="relative mb-7 rounded-2xl overflow-hidden bg-gray-100">
@@ -354,44 +363,96 @@ export default function TreeDetail() {
                 {/* CTA buttons */}
                 <div className="px-6 pb-6 space-y-2.5">
                   {alreadyInCart ? (
-                    <button
+                    <Button
                       onClick={() => setCartDrawerOpen(true)}
-                      className="w-full py-3.5 bg-emerald-50 text-emerald-700 text-base font-bold rounded-xl text-center flex items-center justify-center gap-2"
+                      variant="subtle"
+                      size="lg"
+                      fullWidth
+                      leftIcon={
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                        </svg>
+                      }
                     >
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                      </svg>
-                      In Cart &mdash; View Cart
-                    </button>
+                      In Cart — View Cart
+                    </Button>
                   ) : justAdded ? (
-                    <div className="w-full py-3.5 bg-emerald-50 text-emerald-700 text-base font-bold rounded-xl text-center flex items-center justify-center gap-2">
+                    <div className="w-full h-12 px-6 bg-emerald-50 text-emerald-700 text-base font-semibold rounded-xl flex items-center justify-center gap-2 animate-fade-in">
                       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                       </svg>
                       Added to Cart
                     </div>
                   ) : (
-                    <button
+                    <Button
                       onClick={handleAddToCart}
-                      className="w-full py-3.5 bg-linear-to-r from-primary to-emerald-600 text-white text-base font-bold rounded-xl hover:brightness-105 transition-all shadow-md flex items-center justify-center gap-2"
+                      variant="gradient"
+                      size="lg"
+                      fullWidth
+                      leftIcon={
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
+                        </svg>
+                      }
                     >
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
-                      </svg>
                       Add to Cart
-                    </button>
+                    </Button>
                   )}
 
-                  <button
+                  <Button
                     onClick={() => setShowModal(true)}
-                    className="w-full py-3 border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all"
+                    variant="secondary"
+                    fullWidth
                   >
                     Buy Now
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Sticky mobile CTA */}
+      <div
+        className="lg:hidden fixed inset-x-0 bottom-0 z-40 bg-white/95 backdrop-blur-md border-t border-gray-200 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex items-center gap-3 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]"
+        role="region"
+        aria-label="Booking actions"
+      >
+        <div className="flex flex-col leading-tight">
+          <span className="text-lg font-bold text-gray-900">
+            ₹{seasonPrice > 0 ? seasonPrice.toLocaleString('en-IN') : '—'}
+          </span>
+          <span className="text-[11px] text-gray-500 -mt-0.5">/ season</span>
+        </div>
+        <div className="flex-1 flex items-center gap-2">
+          <Button
+            onClick={() => setShowModal(true)}
+            variant="secondary"
+            size="md"
+            className="flex-1"
+          >
+            Buy Now
+          </Button>
+          {alreadyInCart ? (
+            <Button
+              onClick={() => setCartDrawerOpen(true)}
+              variant="subtle"
+              size="md"
+              className="flex-1"
+            >
+              View Cart
+            </Button>
+          ) : (
+            <Button
+              onClick={handleAddToCart}
+              variant="gradient"
+              size="md"
+              className="flex-1"
+            >
+              {justAdded ? 'Added ✓' : 'Add to Cart'}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -420,14 +481,6 @@ export default function TreeDetail() {
 }
 
 /* ─── Sub-components ─── */
-
-function ChevronRight() {
-  return (
-    <svg className="w-3 h-3 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-    </svg>
-  );
-}
 
 function SpecIcon({ type }) {
   const cls = 'w-4 h-4';

@@ -2,15 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchOwnerStats, fetchOwnerOrders, markOrderDelivered, activateOrder, fetchPendingUpdates } from '../../services/api';
 import PostUpdateModal from '../../components/PostUpdateModal';
-
-const STATUS_STYLES = {
-  pending: 'bg-yellow-100 text-yellow-700',
-  confirmed: 'bg-blue-100 text-blue-700',
-  active: 'bg-green-100 text-green-700',
-  delivered: 'bg-emerald-100 text-emerald-700',
-  completed: 'bg-gray-100 text-gray-600',
-  cancelled: 'bg-red-100 text-red-600',
-};
+import { Button, StatusBadge, SkeletonStat } from '../../components/ui';
 
 export default function OwnerDashboard() {
   const [stats, setStats] = useState(null);
@@ -32,14 +24,12 @@ export default function OwnerDashboard() {
 
   if (loading) {
     return (
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div className="animate-pulse space-y-6">
-          <div className="h-8 bg-gray-100 rounded w-1/3" />
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-24 bg-gray-100 rounded-2xl" />
-            ))}
-          </div>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-6">
+        <div className="h-8 w-1/3 shimmer rounded-lg" aria-hidden="true" />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <SkeletonStat key={i} />
+          ))}
         </div>
       </div>
     );
@@ -47,17 +37,21 @@ export default function OwnerDashboard() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-8 gap-4 flex-wrap">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Owner Dashboard</h1>
           <p className="text-gray-500 mt-1">Manage your tree listings and track rentals</p>
         </div>
-        <Link
+        <Button
           to="/owner/trees/new"
-          className="px-6 py-2.5 bg-primary text-white font-medium rounded-xl hover:bg-primary-dark transition-colors"
+          leftIcon={
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+          }
         >
-          + Add Tree
-        </Link>
+          Add Tree
+        </Button>
       </div>
 
       {/* Stats */}
@@ -248,21 +242,15 @@ function OrderRow({ order, onUpdate, pendingUpdates }) {
             })}
           </p>
         </div>
-        <span
-          className={`text-xs font-semibold px-2.5 py-0.5 rounded-full capitalize ${
-            STATUS_STYLES[order.status] || 'bg-gray-100'
-          }`}
-        >
-          {order.status}
-        </span>
+        <StatusBadge status={order.status} />
 
         {order.status === 'confirmed' && (
           <button
             onClick={handleActivate}
             disabled={activating}
-            className="text-xs font-semibold px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 shrink-0"
+            className="text-xs font-semibold px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
           >
-            {activating ? 'Starting...' : 'Start Season'}
+            {activating ? 'Starting…' : 'Start Season'}
           </button>
         )}
 
@@ -271,7 +259,7 @@ function OrderRow({ order, onUpdate, pendingUpdates }) {
             {needsUpdate && (
               <button
                 onClick={() => setShowUpdateModal(true)}
-                className="text-xs font-semibold px-3 py-1.5 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors shrink-0"
+                className="text-xs font-semibold px-3 py-1.5 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
               >
                 Post Update
               </button>
@@ -279,9 +267,9 @@ function OrderRow({ order, onUpdate, pendingUpdates }) {
             <button
               onClick={handleDeliver}
               disabled={delivering}
-              className="text-xs font-semibold px-3 py-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 shrink-0"
+              className="text-xs font-semibold px-3 py-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
             >
-              {delivering ? 'Marking...' : 'Mark Delivered'}
+              {delivering ? 'Marking…' : 'Mark Delivered'}
             </button>
           </>
         )}

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { createOrder, verifyPayment, updatePhone } from '../services/api';
 import AddressPickerCheckout from './AddressPickerCheckout';
 import useStore from '../store/useStore';
+import useModal from '../hooks/useModal';
 
 export default function BookingModal({ tree, totalPrice, deposit, onClose }) {
   const navigate = useNavigate();
@@ -18,6 +19,9 @@ export default function BookingModal({ tree, totalPrice, deposit, onClose }) {
   const DELIVERY_FEE = 1000;
   const seasonPrice = Number(tree.price_per_season) || 0;
   const needsPhone = !user?.phone;
+
+  // Block close while a payment is in flight to avoid orphaned orders.
+  useModal({ open: true, onClose: loading ? () => {} : onClose });
 
   useEffect(() => {
     const script = document.createElement('script');
@@ -114,14 +118,27 @@ export default function BookingModal({ tree, totalPrice, deposit, onClose }) {
   const locationParts = [tree.location, tree.city, tree.state].filter(Boolean);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="booking-modal-title"
+    >
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={loading ? undefined : onClose}
+      />
+      <div className="relative bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden max-h-[92vh] flex flex-col animate-fade-in-up">
         {/* Header */}
-        <div className="bg-linear-to-r from-primary to-emerald-600 px-6 py-5 text-white">
+        <div className="bg-linear-to-r from-primary to-emerald-600 px-6 py-5 text-white shrink-0">
           <div className="flex items-center justify-between mb-1">
-            <h2 className="text-lg font-bold">Confirm your order</h2>
-            <button onClick={onClose} className="p-1.5 hover:bg-white/20 rounded-full transition-colors">
+            <h2 id="booking-modal-title" className="text-lg font-bold">Confirm your order</h2>
+            <button
+              onClick={loading ? undefined : onClose}
+              disabled={loading}
+              className="p-1.5 hover:bg-white/20 rounded-full transition-colors disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+              aria-label="Close"
+            >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
@@ -130,7 +147,7 @@ export default function BookingModal({ tree, totalPrice, deposit, onClose }) {
           <p className="text-sm text-white/70">Review the details below</p>
         </div>
 
-        <div className="p-6 space-y-5">
+        <div className="p-6 space-y-5 overflow-y-auto">
           {/* Tree info */}
           <div className="flex gap-4 items-center">
             <img

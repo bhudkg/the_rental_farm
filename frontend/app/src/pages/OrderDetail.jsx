@@ -3,15 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { fetchOrder, checkCanRate, submitRating, confirmReceipt } from '../services/api';
 import StatusTracker from '../components/StatusTracker';
 import OrderTimeline from '../components/OrderTimeline';
-
-const STATUS_STYLES = {
-  pending: 'bg-yellow-100 text-yellow-700',
-  confirmed: 'bg-blue-100 text-blue-700',
-  active: 'bg-green-100 text-green-700',
-  delivered: 'bg-emerald-100 text-emerald-700',
-  completed: 'bg-gray-100 text-gray-600',
-  cancelled: 'bg-red-100 text-red-600',
-};
+import { Breadcrumbs, StatusBadge, Skeleton } from '../components/ui';
 
 export default function OrderDetail() {
   const { id } = useParams();
@@ -40,11 +32,11 @@ export default function OrderDetail() {
 
   if (loading) {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-10">
-        <div className="animate-pulse space-y-6">
-          <div className="h-8 bg-gray-100 rounded w-1/2" />
-          <div className="h-64 bg-gray-100 rounded-2xl" />
-        </div>
+      <div className="max-w-2xl mx-auto px-4 py-10 space-y-6">
+        <Skeleton className="h-4 w-40" />
+        <Skeleton className="h-8 w-2/3" />
+        <Skeleton className="h-24 rounded-2xl" />
+        <Skeleton className="h-64 rounded-2xl" />
       </div>
     );
   }
@@ -62,22 +54,18 @@ export default function OrderDetail() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      <Link to="/orders" className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-6">
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-        </svg>
-        Back to orders
-      </Link>
+      <Breadcrumbs
+        className="mb-5"
+        items={[
+          { to: '/', label: 'Home' },
+          { to: '/orders', label: 'My Orders' },
+          { label: `Order #${order.id}` },
+        ]}
+      />
 
-      <div className="flex items-center gap-3 mb-8">
+      <div className="flex items-center gap-3 mb-8 flex-wrap">
         <h1 className="text-2xl font-bold text-gray-900">Order Confirmation</h1>
-        <span
-          className={`text-sm font-semibold px-3 py-1 rounded-full capitalize ${
-            STATUS_STYLES[order.status] || 'bg-gray-100'
-          }`}
-        >
-          {order.status}
-        </span>
+        <StatusBadge status={order.status} size="md" />
       </div>
 
       {/* Status tracker */}

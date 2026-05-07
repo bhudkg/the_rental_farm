@@ -1,22 +1,17 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import useStore, { DELIVERY_FEE } from '../store/useStore';
 import CheckoutModal from './CheckoutModal';
 import { PLACEHOLDER_TREE_IMG } from '../constants/images';
+import { Button, EmptyState } from './ui';
+import useModal from '../hooks/useModal';
 
 export default function CartDrawer() {
   const { cart, cartDrawerOpen, setCartDrawerOpen, removeFromCart, getCartTotal, getCartCount } = useStore();
   const [showCheckout, setShowCheckout] = useState(false);
   const backdropRef = useRef(null);
 
-  useEffect(() => {
-    if (cartDrawerOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => { document.body.style.overflow = ''; };
-  }, [cartDrawerOpen]);
+  useModal({ open: cartDrawerOpen, onClose: () => setCartDrawerOpen(false) });
 
   if (!cartDrawerOpen && !showCheckout) return null;
 
@@ -33,16 +28,21 @@ export default function CartDrawer() {
     <>
       {/* Drawer */}
       {cartDrawerOpen && (
-        <div className="fixed inset-0 z-50 flex justify-end">
+        <div
+          className="fixed inset-0 z-50 flex justify-end"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Shopping cart"
+        >
           {/* Backdrop */}
           <div
             ref={backdropRef}
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200"
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in"
             onClick={() => setCartDrawerOpen(false)}
           />
 
           {/* Panel */}
-          <div className="relative w-full max-w-md bg-white shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+          <div className="relative w-full max-w-md bg-white shadow-2xl flex flex-col animate-slide-in-right">
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
               <div className="flex items-center gap-2.5">
@@ -68,21 +68,22 @@ export default function CartDrawer() {
 
             {/* Body */}
             {cart.length === 0 ? (
-              <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
-                <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-4">
-                  <svg className="w-10 h-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
-                  </svg>
-                </div>
-                <p className="text-gray-500 font-medium mb-1">Your cart is empty</p>
-                <p className="text-sm text-gray-400 mb-4">Browse our trees and add some to your cart</p>
-                <Link
-                  to="/trees"
-                  onClick={() => setCartDrawerOpen(false)}
-                  className="px-5 py-2.5 bg-primary text-white text-sm font-semibold rounded-xl hover:bg-primary-dark transition-colors"
-                >
-                  Browse Trees
-                </Link>
+              <div className="flex-1 flex items-center justify-center px-6">
+                <EmptyState
+                  className="border-0 bg-transparent w-full max-w-sm"
+                  icon={
+                    <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
+                    </svg>
+                  }
+                  title="Your cart is empty"
+                  description="Add a tree to your cart and we'll line up planting, weekly updates, and harvest delivery."
+                  action={
+                    <Button to="/trees" onClick={() => setCartDrawerOpen(false)}>
+                      Browse Trees
+                    </Button>
+                  }
+                />
               </div>
             ) : (
               <>
@@ -159,12 +160,19 @@ export default function CartDrawer() {
                       <span>₹{total.toLocaleString('en-IN')}</span>
                     </div>
                   </div>
-                  <button
+                  <Button
                     onClick={() => { setCartDrawerOpen(false); setShowCheckout(true); }}
-                    className="w-full py-3.5 bg-linear-to-r from-primary to-emerald-600 text-white text-sm font-bold rounded-xl hover:brightness-105 transition-all shadow-md"
+                    variant="gradient"
+                    size="lg"
+                    fullWidth
+                    rightIcon={
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                      </svg>
+                    }
                   >
                     Proceed to Checkout
-                  </button>
+                  </Button>
                 </div>
               </>
             )}

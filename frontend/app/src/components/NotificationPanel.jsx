@@ -70,7 +70,11 @@ export default function NotificationPanel({ onClose, onCountChange }) {
   };
 
   return (
-    <div className="absolute right-0 top-full mt-2 w-96 max-h-[70vh] bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50">
+    <div
+      role="dialog"
+      aria-label="Notifications"
+      className="absolute right-0 top-full mt-2 w-[min(92vw,24rem)] max-h-[70vh] bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50 animate-fade-in-up"
+    >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
         <h3 className="font-semibold text-gray-900">Notifications</h3>
@@ -85,12 +89,10 @@ export default function NotificationPanel({ onClose, onCountChange }) {
       {/* List */}
       <div className="overflow-y-auto max-h-[calc(70vh-56px)]">
         {loading ? (
-          <div className="p-6 text-center">
-            <div className="animate-pulse space-y-3">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="h-14 bg-gray-100 rounded-xl" />
-              ))}
-            </div>
+          <div className="p-4 space-y-3" aria-hidden="true">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-14 shimmer rounded-xl" />
+            ))}
           </div>
         ) : notifications.length === 0 ? (
           <div className="p-8 text-center">

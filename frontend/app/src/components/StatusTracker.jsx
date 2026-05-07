@@ -11,6 +11,22 @@ const STEPS = [
 
 const TERMINAL = { cancelled: 'Cancelled', failed: 'Failed' };
 
+// Static class maps so Tailwind's JIT picks up every variant.
+const TERMINAL_STYLES = {
+  cancelled: {
+    wrapper: 'bg-red-50 border-red-200',
+    iconBg: 'bg-red-100',
+    icon: 'text-red-500',
+    title: 'text-red-800',
+  },
+  failed: {
+    wrapper: 'bg-gray-50 border-gray-200',
+    iconBg: 'bg-gray-100',
+    icon: 'text-gray-500',
+    title: 'text-gray-800',
+  },
+};
+
 export default function StatusTracker({ orderId, currentStatus, createdAt }) {
   const [logs, setLogs] = useState([]);
 
@@ -41,20 +57,25 @@ export default function StatusTracker({ orderId, currentStatus, createdAt }) {
   };
 
   if (isTerminal) {
-    const color = currentStatus === 'cancelled' ? 'red' : 'gray';
+    const style = TERMINAL_STYLES[currentStatus] || TERMINAL_STYLES.failed;
     return (
-      <div className={`bg-${color}-50 border border-${color}-200 rounded-2xl p-6 mb-8 text-center`}>
-        <div className={`w-12 h-12 mx-auto mb-3 rounded-full bg-${color}-100 flex items-center justify-center`}>
-          <svg className={`w-6 h-6 text-${color}-500`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <div className={`${style.wrapper} border rounded-2xl p-6 mb-8 text-center`}>
+        <div className={`w-12 h-12 mx-auto mb-3 rounded-full ${style.iconBg} flex items-center justify-center`}>
+          <svg className={`w-6 h-6 ${style.icon}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </div>
-        <h2 className={`text-lg font-semibold text-${color}-800`}>
+        <h2 className={`text-lg font-semibold ${style.title}`}>
           Order {TERMINAL[currentStatus]}
         </h2>
       </div>
     );
   }
+
+  // Connector progress: covers 0..(STEPS.length-1) gaps.
+  const segmentCount = STEPS.length - 1;
+  const progressPct =
+    activeIdx <= 0 ? 0 : Math.min(100, (activeIdx / segmentCount) * 100);
 
   return (
     <div className="mb-8">
@@ -62,8 +83,8 @@ export default function StatusTracker({ orderId, currentStatus, createdAt }) {
         {/* Connector line */}
         <div className="absolute top-5 left-0 right-0 h-0.5 bg-gray-200 z-0" />
         <div
-          className="absolute top-5 left-0 h-0.5 bg-green-500 z-0 transition-all duration-500"
-          style={{ width: `${Math.max(0, activeIdx) * 25}%` }}
+          className="absolute top-5 left-0 h-0.5 bg-primary z-0 transition-all duration-500"
+          style={{ width: `${progressPct}%` }}
         />
 
         {STEPS.map((step, i) => {
@@ -75,9 +96,9 @@ export default function StatusTracker({ orderId, currentStatus, createdAt }) {
               <div
                 className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${
                   isDone
-                    ? 'bg-green-500 border-green-500 text-white'
+                    ? 'bg-primary border-primary text-white'
                     : 'bg-white border-gray-300 text-gray-400'
-                } ${isCurrent ? 'ring-4 ring-green-100' : ''}`}
+                } ${isCurrent ? 'ring-4 ring-primary/20 scale-110' : ''}`}
               >
                 {isDone ? (
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -88,8 +109,8 @@ export default function StatusTracker({ orderId, currentStatus, createdAt }) {
                 )}
               </div>
               <span
-                className={`text-xs mt-2 font-medium ${
-                  isDone ? 'text-green-700' : 'text-gray-400'
+                className={`text-[11px] sm:text-xs mt-2 font-medium text-center ${
+                  isDone ? 'text-primary-dark' : 'text-gray-400'
                 }`}
               >
                 {step.label}

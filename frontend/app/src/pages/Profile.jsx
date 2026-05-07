@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import AddressManager from '../components/AddressManager';
 import useStore from '../store/useStore';
-import { updatePhone, fetchMe, fetchOwnerProfile } from '../services/api';
+import { updatePhone, fetchOwnerProfile } from '../services/api';
+import { Button, EmptyState, toast } from '../components/ui';
 
 export default function Profile() {
   const user = useStore((s) => s.user);
@@ -24,15 +24,25 @@ export default function Profile() {
     }
   }, [user?.has_owner_profile]);
 
+  const phoneError = (() => {
+    if (!editingPhone) return null;
+    const v = phoneInput.trim();
+    if (!v) return null;
+    if (!/^\d{10}$/.test(v)) return 'Enter a valid 10-digit mobile number';
+    return null;
+  })();
+
   const handleSavePhone = async () => {
-    if (!phoneInput.trim()) return;
+    const v = phoneInput.trim();
+    if (!v || phoneError) return;
     setSavingPhone(true);
     try {
-      const updated = await updatePhone(phoneInput.trim());
+      const updated = await updatePhone(v);
       setUser(updated);
       setEditingPhone(false);
-    } catch {
-      /* ignore */
+      toast.success('Phone number updated');
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || 'Could not update phone');
     } finally {
       setSavingPhone(false);
     }
@@ -40,9 +50,17 @@ export default function Profile() {
 
   if (!user) {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-20 text-center">
-        <p className="text-gray-500 mb-4">Please sign in to view your profile.</p>
-        <Link to="/login" className="text-primary font-medium hover:underline">Sign In</Link>
+      <div className="max-w-2xl mx-auto px-4 py-16">
+        <EmptyState
+          icon={
+            <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+            </svg>
+          }
+          title="Sign in to view your profile"
+          description="Manage your account, addresses, and owner profile after signing in."
+          action={<Button to="/login">Sign In</Button>}
+        />
       </div>
     );
   }
@@ -76,33 +94,48 @@ export default function Profile() {
           <div>
             <p className="text-xs text-gray-400 mb-0.5">Phone</p>
             {editingPhone ? (
-              <div className="flex gap-2 mt-1">
-                <input
-                  value={phoneInput}
-                  onChange={(e) => setPhoneInput(e.target.value)}
-                  placeholder="10-digit mobile"
-                  className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
-                />
-                <button
-                  onClick={handleSavePhone}
-                  disabled={savingPhone}
-                  className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg disabled:opacity-50"
-                >
-                  {savingPhone ? '...' : 'Save'}
-                </button>
-                <button
-                  onClick={() => { setEditingPhone(false); setPhoneInput(user.phone || ''); }}
-                  className="px-3 py-2 border border-gray-200 text-gray-500 text-sm rounded-lg"
-                >
-                  Cancel
-                </button>
+              <div>
+                <div className="flex flex-col sm:flex-row gap-2 mt-1">
+                  <input
+                    value={phoneInput}
+                    onChange={(e) => setPhoneInput(e.target.value)}
+                    placeholder="10-digit mobile"
+                    inputMode="numeric"
+                    maxLength={10}
+                    aria-invalid={Boolean(phoneError) || undefined}
+                    aria-describedby={phoneError ? 'phone-error' : undefined}
+                    className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm transition-shadow focus:ring-4 focus:ring-primary/15 focus:border-primary outline-none placeholder:text-gray-400 aria-[invalid=true]:border-red-300 aria-[invalid=true]:focus:ring-red-200"
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={handleSavePhone}
+                      loading={savingPhone}
+                      disabled={Boolean(phoneError) || !phoneInput.trim()}
+                      size="sm"
+                    >
+                      Save
+                    </Button>
+                    <Button
+                      onClick={() => { setEditingPhone(false); setPhoneInput(user.phone || ''); }}
+                      variant="secondary"
+                      size="sm"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+                {phoneError && (
+                  <p id="phone-error" role="alert" className="text-xs text-red-600 mt-1.5">
+                    {phoneError}
+                  </p>
+                )}
               </div>
             ) : (
               <div className="flex items-center gap-3">
                 <p className="text-sm font-medium text-gray-900">{user.phone || <span className="text-gray-400 italic">Not set</span>}</p>
                 <button
                   onClick={() => { setPhoneInput(user.phone || ''); setEditingPhone(true); }}
-                  className="text-xs text-primary font-medium hover:underline"
+                  className="text-xs text-primary font-semibold hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
                 >
                   {user.phone ? 'Edit' : 'Add'}
                 </button>

@@ -5,6 +5,7 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import CartDrawer from './components/CartDrawer';
 import RequireOwner from './components/RequireOwner';
+import { Toaster } from './components/ui';
 import Home from './pages/Home';
 import SearchResults from './pages/SearchResults';
 import Trees from './pages/Trees';
@@ -68,6 +69,7 @@ export default function App() {
           </main>
           <Footer />
           <CartDrawer />
+          <Toaster />
         </div>
       </BrowserRouter>
     </GoogleOAuthProvider>

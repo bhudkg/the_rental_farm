@@ -1,15 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import {
+  Button,
+  EmptyState,
+  SkeletonOrderRow,
+  StatusBadge,
+} from '../components/ui';
 import { fetchOrders } from '../services/api';
-
-const STATUS_STYLES = {
-  pending: 'bg-yellow-100 text-yellow-700',
-  confirmed: 'bg-blue-100 text-blue-700',
-  active: 'bg-green-100 text-green-700',
-  delivered: 'bg-emerald-100 text-emerald-700',
-  completed: 'bg-gray-100 text-gray-600',
-  cancelled: 'bg-red-100 text-red-600',
-};
 
 export default function Orders() {
   const [orders, setOrders] = useState([]);
@@ -25,10 +22,11 @@ export default function Orders() {
   if (loading) {
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">My Orders</h1>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">My Orders</h1>
+        <p className="text-gray-500 mb-8">Track your current and past tree rentals.</p>
         <div className="space-y-4">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-28 bg-gray-100 rounded-2xl animate-pulse" />
+            <SkeletonOrderRow key={i} />
           ))}
         </div>
       </div>
@@ -41,46 +39,39 @@ export default function Orders() {
       <p className="text-gray-500 mb-8">Track your current and past tree rentals.</p>
 
       {orders.length === 0 ? (
-        <div className="text-center py-20 bg-gray-50 rounded-2xl">
-          <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-          </svg>
-          <p className="text-gray-400 text-lg mb-4">No orders yet</p>
-          <Link
-            to="/trees"
-            className="inline-block px-6 py-2.5 bg-primary text-white rounded-xl font-medium hover:bg-primary-dark transition-colors"
-          >
-            Browse Trees
-          </Link>
-        </div>
+        <EmptyState
+          icon={
+            <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+            </svg>
+          }
+          title="No orders yet"
+          description="Once you rent a tree, you'll see weekly updates, status, and harvest delivery here."
+          action={<Button to="/trees">Browse Trees</Button>}
+        />
       ) : (
         <div className="space-y-4">
           {orders.map((order) => (
             <Link
               key={order.id}
               to={`/orders/${order.id}`}
-              className="block bg-white border border-gray-100 rounded-2xl p-5 hover:shadow-lg transition-shadow"
+              className="group block bg-white border border-gray-100 rounded-2xl p-5 hover:shadow-lg hover:border-gray-200 hover:-translate-y-0.5 transition-all duration-200"
             >
               <div className="flex items-start gap-4">
                 {order.tree && (
                   <img
                     src={order.tree.image_urls?.[0] || order.tree.image_url}
                     alt={order.tree.name}
-                    className="w-16 h-16 rounded-xl object-cover shrink-0"
+                    className="w-16 h-16 rounded-xl object-cover shrink-0 ring-1 ring-gray-100"
+                    loading="lazy"
                   />
                 )}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-semibold text-gray-900 truncate">
+                  <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                    <h3 className="font-semibold text-gray-900 truncate group-hover:text-primary transition-colors">
                       {order.tree?.name || 'Tree rental'}
                     </h3>
-                    <span
-                      className={`text-xs font-semibold px-2.5 py-0.5 rounded-full capitalize ${
-                        STATUS_STYLES[order.status] || 'bg-gray-100'
-                      }`}
-                    >
-                      {order.status}
-                    </span>
+                    <StatusBadge status={order.status} />
                   </div>
                   <p className="text-sm text-gray-500">
                     {new Date(order.created_at).toLocaleDateString('en-IN', {
@@ -89,7 +80,8 @@ export default function Orders() {
                   </p>
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="font-bold text-gray-900">₹{(order.total_price ?? 0).toFixed(2)}</p>
+                  <p className="font-bold text-gray-900">₹{(order.total_price ?? 0).toLocaleString('en-IN')}</p>
+                  <p className="text-xs text-gray-400">Total</p>
                 </div>
               </div>
             </Link>

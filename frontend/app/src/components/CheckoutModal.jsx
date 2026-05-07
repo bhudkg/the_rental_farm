@@ -4,6 +4,7 @@ import { createBatchOrder, verifyBatchPayment, updatePhone } from '../services/a
 import AddressPickerCheckout from './AddressPickerCheckout';
 import useStore, { DELIVERY_FEE } from '../store/useStore';
 import { PLACEHOLDER_TREE_IMG } from '../constants/images';
+import useModal from '../hooks/useModal';
 
 export default function CheckoutModal({ onClose }) {
   const navigate = useNavigate();
@@ -16,6 +17,8 @@ export default function CheckoutModal({ onClose }) {
   const [savingPhone, setSavingPhone] = useState(false);
 
   const needsPhone = !user?.phone;
+
+  useModal({ open: true, onClose: loading ? () => {} : onClose });
 
   useEffect(() => {
     const existing = document.querySelector('script[src*="razorpay"]');
@@ -123,14 +126,27 @@ export default function CheckoutModal({ onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden max-h-[90vh] flex flex-col">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="checkout-modal-title"
+    >
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={loading ? undefined : onClose}
+      />
+      <div className="relative bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden max-h-[90vh] flex flex-col animate-fade-in-up">
         {/* Header */}
         <div className="bg-linear-to-r from-primary to-emerald-600 px-6 py-5 text-white shrink-0">
           <div className="flex items-center justify-between mb-1">
-            <h2 className="text-lg font-bold">Checkout</h2>
-            <button onClick={onClose} className="p-1.5 hover:bg-white/20 rounded-full transition-colors">
+            <h2 id="checkout-modal-title" className="text-lg font-bold">Checkout</h2>
+            <button
+              onClick={loading ? undefined : onClose}
+              disabled={loading}
+              className="p-1.5 hover:bg-white/20 rounded-full transition-colors disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+              aria-label="Close"
+            >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>

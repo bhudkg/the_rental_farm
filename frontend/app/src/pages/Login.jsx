@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import { googleLogin, login, register } from '../services/api';
 import useStore from '../store/useStore';
+import { Button } from '../components/ui';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -85,7 +86,7 @@ export default function Login() {
                   required
                   value={form.name}
                   onChange={update('name')}
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm transition-shadow focus:ring-4 focus:ring-primary/15 focus:border-primary outline-none placeholder:text-gray-400"
                   placeholder="Your name"
                 />
               </div>
@@ -98,7 +99,8 @@ export default function Login() {
               required
               value={form.email}
               onChange={update('email')}
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm transition-shadow focus:ring-4 focus:ring-primary/15 focus:border-primary outline-none placeholder:text-gray-400 aria-[invalid=true]:border-red-300 aria-[invalid=true]:focus:ring-red-200"
+              aria-invalid={Boolean(error) || undefined}
               placeholder="you@example.com"
             />
           </div>
@@ -110,7 +112,8 @@ export default function Login() {
                 required
                 value={form.password}
                 onChange={update('password')}
-                className="w-full px-4 py-2.5 pr-11 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                className="w-full px-4 py-2.5 pr-11 border border-gray-200 rounded-xl text-sm transition-shadow focus:ring-4 focus:ring-primary/15 focus:border-primary outline-none placeholder:text-gray-400 aria-[invalid=true]:border-red-300 aria-[invalid=true]:focus:ring-red-200"
+                aria-invalid={Boolean(error) || undefined}
                 placeholder="••••••••"
               />
               <button
@@ -134,20 +137,25 @@ export default function Login() {
           </div>
 
           {error && (
-            <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>
+            <p
+              role="alert"
+              className="text-sm text-red-700 bg-red-50 border border-red-100 rounded-lg px-3 py-2 flex items-start gap-2 animate-fade-in"
+            >
+              <svg className="w-4 h-4 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0 3.75h.008M12 21a9 9 0 100-18 9 9 0 000 18z" />
+              </svg>
+              <span>{error}</span>
+            </p>
           )}
 
-          <button
+          <Button
             type="submit"
-            disabled={loading}
-            className="w-full py-3 bg-primary text-white font-medium rounded-xl hover:bg-primary-dark transition-colors disabled:opacity-50"
+            loading={loading}
+            fullWidth
+            size="lg"
           >
-            {loading
-              ? 'Please wait...'
-              : isRegister
-              ? 'Create Account'
-              : 'Sign In'}
-          </button>
+            {isRegister ? 'Create Account' : 'Sign In'}
+          </Button>
 
           <div className="relative my-2">
             <div className="absolute inset-0 flex items-center">
