@@ -1,3 +1,4 @@
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI
@@ -13,6 +14,9 @@ from seed import seed_trees
 from trending import recompute_trending_scores
 
 import models  # noqa: F401 — ensures models are registered with Base
+
+_raw_origins = os.getenv("ALLOWED_ORIGINS", "")
+ALLOWED_ORIGINS = [o.strip() for o in _raw_origins.split(",") if o.strip()] or ["*"]
 
 
 @asynccontextmanager
@@ -35,7 +39,7 @@ app = FastAPI(title="The Rental Farm", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
