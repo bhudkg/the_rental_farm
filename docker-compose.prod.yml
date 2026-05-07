@@ -1,0 +1,60 @@
+# App stack: postgres + backend + frontend.
+# Managed by Jenkins (deploy stage). Do NOT bring this up before the platform
+# stack — the `trf_edge` network must exist first.
+#
+#   export GHCR_REPO=ghcr.io/<owner>/<repo>
+#   export TAG=<sha>
+#   docker compose -f docker-compose.prod.yml --env-file ./backend/.env up -d
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: trf_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-rental_farm_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rental_farm_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-the_rental_farm}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-rental_farm_user} -d ${POSTGRES_DB:-the_rental_farm}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - trf_net
+
+  backend:
+    image: ${GHCR_REPO:-ghcr.io/the-rental-farm}/backend:${TAG:-latest}
+    container_name: trf_backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-rental_farm_user}:${POSTGRES_PASSWORD:-rental_farm_pass}@postgres:5432/${POSTGRES_DB:-the_rental_farm}
+    networks:
+      - trf_net
+
+  frontend:
+    image: ${GHCR_REPO:-ghcr.io/the-rental-farm}/frontend:${TAG:-latest}
+    container_name: trf_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    networks:
+      - trf_net
+      - trf_edge
+
+volumes:
+  pg_data:
+
+networks:
+  trf_net:
+    name: trf_net
+    driver: bridge
+  trf_edge:
+    external: true

@@ -1,0 +1,53 @@
+# Platform stack: edge HTTPS proxy + CI/CD server.
+# Brought up ONCE, manually, on the VM. Does NOT restart on app deploys.
+#
+#   docker network create trf_edge          # one-time
+#   docker compose -f docker-compose.platform.yml up -d
+#
+# Required env (in /opt/the-rental-farm/.platform.env):
+#   DOMAIN              fully qualified DuckDNS name, e.g. trfdemo.duckdns.org
+#   ACME_EMAIL          email for Let's Encrypt registration
+#   JENKINS_ADMIN_USER  initial admin (read by JCasC on first boot)
+#   JENKINS_ADMIN_PASS  initial admin password
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: trf_caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    env_file:
+      - .platform.env
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - trf_edge
+
+  jenkins:
+    image: jenkins/jenkins:lts-jdk17
+    container_name: trf_jenkins
+    restart: unless-stopped
+    user: root  # required to access the docker socket below
+    environment:
+      JENKINS_OPTS: "--prefix=/jenkins"
+      JAVA_OPTS: "-Djenkins.install.runSetupWizard=false -Dhudson.model.DirectoryBrowserSupport.CSP="
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /usr/bin/docker:/usr/bin/docker:ro
+      - /opt/the-rental-farm:/opt/the-rental-farm
+    networks:
+      - trf_edge
+
+volumes:
+  caddy_data:
+  caddy_config:
+  jenkins_home:
+
+networks:
+  trf_edge:
+    external: true
