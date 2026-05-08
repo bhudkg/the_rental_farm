@@ -29,6 +29,7 @@ services:
     image: ${GHCR_REPO:-ghcr.io/the-rental-farm}/backend:${TAG:-latest}
     container_name: trf_backend
     restart: unless-stopped
+    init: true
     depends_on:
       postgres:
         condition: service_healthy
@@ -43,6 +44,7 @@ services:
     image: ${GHCR_REPO:-ghcr.io/the-rental-farm}/frontend:${TAG:-latest}
     container_name: trf_frontend
     restart: unless-stopped
+    init: true
     depends_on:
       - backend
     networks:

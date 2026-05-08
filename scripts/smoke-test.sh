@@ -20,6 +20,10 @@ check() {
 }
 
 echo "Smoke testing on network=$NETWORK timeout=${TIMEOUT}s"
-check "backend /api/health" "http://trf_backend:8000/api/health"
+# Backend is reached through the frontend's nginx /api/ proxy. This both keeps
+# the test on a single network (trf_edge) and exercises the same request path
+# real traffic takes (Caddy → nginx → backend), so a broken proxy config is
+# caught before rollout.
+check "backend /api/health" "http://trf_frontend/api/health"
 check "frontend /"          "http://trf_frontend/"
 echo "Smoke tests passed."

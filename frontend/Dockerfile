@@ -1,10 +1,12 @@
+# syntax=docker/dockerfile:1.7
+
 # ── Stage 1: Build ──
 FROM node:20-alpine AS build
 
 WORKDIR /app
 
 COPY app/package.json app/package-lock.json* ./
-RUN npm ci
+RUN --mount=type=cache,target=/root/.npm npm ci
 
 COPY app/ .
 
@@ -13,6 +15,11 @@ ARG VITE_GOOGLE_CLIENT_ID
 ARG VITE_MAPPLS_TOKEN
 ARG VITE_CLOUDINARY_CLOUD_NAME
 ARG VITE_CLOUDINARY_UPLOAD_PRESET
+ENV VITE_API_URL=$VITE_API_URL \
+    VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID \
+    VITE_MAPPLS_TOKEN=$VITE_MAPPLS_TOKEN \
+    VITE_CLOUDINARY_CLOUD_NAME=$VITE_CLOUDINARY_CLOUD_NAME \
+    VITE_CLOUDINARY_UPLOAD_PRESET=$VITE_CLOUDINARY_UPLOAD_PRESET
 
 RUN npm run build
 
