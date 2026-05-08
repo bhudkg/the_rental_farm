@@ -1,71 +1,197 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #16a34a;
-  --color-primary-dark: #15803d;
-  --color-primary-light: #bbf7d0;
-  --color-accent: #f59e0b;
-  --color-surface: #f8fafc;
-  --color-surface-dark: #f1f5f9;
+  /* ── Brand ────────────────────────────────────────────── */
+  /* Primary: deep forest, sophisticated and warm */
+  --color-primary: #1f4f3f;
+  --color-primary-dark: #143a2c;
+  --color-primary-light: #d8e7df;
+  --color-primary-soft: #eaf2ec;
+
+  /* Accent: warm terracotta — fruit, sunset, India */
+  --color-accent: #d96f3a;
+  --color-accent-dark: #b85528;
+  --color-accent-soft: #fbe7da;
+
+  /* Harvest gold — secondary accent for highlights */
+  --color-harvest: #c89a3b;
+  --color-harvest-soft: #f6ecd1;
+
+  /* Gold leaf — for fine ornament work, hairlines, foil text */
+  --color-gold: #b8893a;
+  --color-gold-bright: #d6a64a;
+  --color-gold-soft: #ecd9a8;
+  --color-gold-deep: #8a652b;
+
+  /* ── Surfaces ─────────────────────────────────────────── */
+  /* Cream paper — a warm off-white that anchors the brand */
+  --color-cream: #faf6ee;
+  --color-cream-dark: #f4ecd9;
+  --color-paper: #ffffff;
+
+  /* Ink — warm near-black, never pure black */
+  --color-ink: #1a1f1c;
+  --color-ink-soft: #3a4540;
+  --color-ink-muted: #6b766f;
+
+  /* Borders — warm-tinted, lower contrast than gray */
+  --color-line: #e7e0cf;
+  --color-line-soft: #f0e9d6;
+
+  /* Aliases kept so existing code still resolves */
+  --color-surface: #faf6ee;
+  --color-surface-dark: #f4ecd9;
+
+  /* ── Typography ───────────────────────────────────────── */
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: 'Fraunces', 'Cormorant Garamond', Georgia, serif;
+
+  /* ── Radius ───────────────────────────────────────────── */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+  --radius-2xl: 1.75rem;
+  --radius-3xl: 2.25rem;
+
+  /* ── Shadows ─────────────────────────────────────────── */
+  --shadow-soft: 0 1px 2px rgba(31, 41, 31, 0.04), 0 4px 16px rgba(31, 41, 31, 0.05);
+  --shadow-card: 0 2px 6px rgba(31, 41, 31, 0.04), 0 8px 24px rgba(31, 41, 31, 0.06);
+  --shadow-pop: 0 4px 12px rgba(31, 41, 31, 0.08), 0 18px 40px rgba(31, 41, 31, 0.1);
+  --shadow-gold: 0 0 0 1px rgba(184, 137, 58, 0.3), 0 8px 24px rgba(31, 41, 31, 0.08);
 }
 
+/* ── Base ────────────────────────────────────────────── */
 body {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background-color: #ffffff;
-  color: #111827;
+  font-family: var(--font-sans);
+  background-color: var(--color-cream);
+  color: var(--color-ink);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 #root {
   min-height: 100vh;
-  background-color: #ffffff;
+  background-color: var(--color-cream);
 }
 
-/* ── Reusable animations ───────────────────────────────────────────── */
+::selection {
+  background-color: rgba(31, 79, 63, 0.18);
+  color: var(--color-primary-dark);
+}
 
+/* ── Display + numeric helpers ───────────────────────── */
+@utility font-display {
+  font-family: var(--font-display);
+  font-feature-settings: 'ss01', 'ss02';
+  letter-spacing: -0.015em;
+}
+
+/* Gold-foil look — applied to text via background-clip */
+@utility text-gold-foil {
+  background-image: linear-gradient(
+    180deg,
+    #e8c574 0%,
+    #b8893a 45%,
+    #8a652b 60%,
+    #d6a64a 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* A thin gold hairline rule with a fleuron in the middle */
+@utility rule-gold {
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(184, 137, 58, 0.55) 18%,
+    rgba(184, 137, 58, 0.55) 82%,
+    transparent
+  );
+  height: 1px;
+}
+
+/* Drop-cap for first letter — for editorial paragraphs */
+@utility drop-cap {
+  &::first-letter {
+    font-family: var(--font-display);
+    font-style: italic;
+    float: left;
+    font-size: 3.4em;
+    line-height: 0.86;
+    margin: 0.05em 0.1em 0 0;
+    color: var(--color-primary);
+  }
+}
+
+@utility font-display-italic {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-feature-settings: 'ss01';
+}
+
+@utility font-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Surfaces with paper texture ─────────────────────── */
+@utility paper {
+  background-color: var(--color-cream);
+  background-image:
+    radial-gradient(1200px 600px at 0% -10%, rgba(31, 79, 63, 0.06), transparent 60%),
+    radial-gradient(900px 500px at 100% 110%, rgba(217, 111, 58, 0.05), transparent 60%);
+}
+
+@utility grain {
+  background-image:
+    var(--tw-grain-image, none),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.85' numOctaves='2' seed='4' /%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.06 0' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' /%3E%3C/svg%3E");
+}
+
+/* ── Animations ──────────────────────────────────────── */
 @keyframes tf-shimmer {
   0% { background-position: -400px 0; }
   100% { background-position: 400px 0; }
 }
-
 @keyframes tf-fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
 }
-
 @keyframes tf-fade-in-up {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
-
 @keyframes tf-zoom-in {
   from { opacity: 0; transform: scale(0.92); }
   to { opacity: 1; transform: scale(1); }
 }
-
 @keyframes tf-slide-in-right {
   from { transform: translateX(100%); }
   to { transform: translateX(0); }
 }
-
 @keyframes tf-slide-in-up {
   from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; transform: translateY(0); }
 }
-
 @keyframes tf-bounce-once {
   0%, 100% { transform: scale(1); }
   30% { transform: scale(1.18); }
   60% { transform: scale(0.96); }
 }
+@keyframes tf-marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
 
 @utility shimmer {
   background-image: linear-gradient(
     90deg,
-    rgba(243, 244, 246, 0.6) 0%,
-    rgba(229, 231, 235, 0.9) 50%,
-    rgba(243, 244, 246, 0.6) 100%
+    rgba(231, 224, 207, 0.6) 0%,
+    rgba(244, 236, 217, 0.95) 50%,
+    rgba(231, 224, 207, 0.6) 100%
   );
   background-size: 800px 100%;
   animation: tf-shimmer 1.4s linear infinite;
@@ -74,28 +200,31 @@ body {
 @utility animate-fade-in {
   animation: tf-fade-in 200ms ease-out both;
 }
-
 @utility animate-fade-in-up {
-  animation: tf-fade-in-up 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: tf-fade-in-up 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
-
 @utility animate-zoom-in {
-  animation: tf-zoom-in 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: tf-zoom-in 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
-
 @utility animate-slide-in-right {
-  animation: tf-slide-in-right 300ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: tf-slide-in-right 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
-
 @utility animate-slide-in-up {
-  animation: tf-slide-in-up 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: tf-slide-in-up 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
-
 @utility animate-bounce-once {
   animation: tf-bounce-once 420ms cubic-bezier(0.22, 1, 0.36, 1);
 }
+@utility animate-marquee {
+  animation: tf-marquee 28s linear infinite;
+}
 
-/* Respect reduced-motion preferences. */
+/* Stagger helper — `[--d:0.05s] animate-fade-in-up` */
+@utility stagger {
+  animation-delay: var(--d, 0s);
+}
+
+/* ── Reduced motion ──────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

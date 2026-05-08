@@ -1,11 +1,13 @@
 const TONES = {
-  neutral: 'bg-gray-100 text-gray-700 ring-gray-200',
-  primary: 'bg-primary/10 text-primary ring-primary/20',
+  neutral: 'bg-cream-dark text-ink-soft ring-line',
+  primary: 'bg-primary-soft text-primary-dark ring-primary/20',
+  accent: 'bg-accent-soft text-accent-dark ring-accent/30',
+  harvest: 'bg-harvest-soft text-[color:var(--color-harvest)] ring-harvest/30',
   success: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
   warning: 'bg-amber-50 text-amber-700 ring-amber-200',
   info: 'bg-blue-50 text-blue-700 ring-blue-200',
   danger: 'bg-red-50 text-red-700 ring-red-200',
-  muted: 'bg-gray-50 text-gray-500 ring-gray-200',
+  muted: 'bg-cream-dark text-ink-muted ring-line',
 };
 
 const SIZES = {
@@ -24,7 +26,7 @@ export default function Badge({
   ...rest
 }) {
   const classes = [
-    'inline-flex items-center gap-1.5 font-semibold rounded-full capitalize',
+    'inline-flex items-center gap-1.5 font-semibold rounded-full capitalize tracking-wide',
     TONES[tone] ?? TONES.neutral,
     SIZES[size] ?? SIZES.sm,
     ring ? 'ring-1' : '',

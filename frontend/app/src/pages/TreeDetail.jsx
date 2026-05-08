@@ -16,6 +16,8 @@ export default function TreeDetail() {
   const [showAllPhotos, setShowAllPhotos] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
+  const [touchStartX, setTouchStartX] = useState(null);
+  const [touchEndX, setTouchEndX] = useState(null);
 
   const { addToCart, isInCart, setCartDrawerOpen, user, wishlistOverrides, setWishlistOverride } = useStore();
 
@@ -52,6 +54,21 @@ export default function TreeDetail() {
     } finally {
       setWlBusy(false);
     }
+  };
+
+  const handleTouchStart = (e) => {
+    setTouchEndX(null);
+    setTouchStartX(e.targetTouches[0].clientX);
+  };
+  const handleTouchMove = (e) => setTouchEndX(e.targetTouches[0].clientX);
+  const handleTouchEnd = () => {
+    if (touchStartX == null || touchEndX == null) return;
+    const dx = touchStartX - touchEndX;
+    if (Math.abs(dx) < 50) return;
+    const len = tree?.image_urls?.length || 1;
+    if (len < 2) return;
+    if (dx > 0) setActiveImg((p) => (p + 1) % len);
+    else setActiveImg((p) => (p - 1 + len) % len);
   };
 
   const handleAddToCart = () => {
@@ -117,7 +134,12 @@ export default function TreeDetail() {
         {/* ── Image Gallery ── */}
         <div className="relative mb-7 rounded-2xl overflow-hidden bg-gray-100">
           {images.length > 1 ? (
-            <div className="relative w-full h-[280px] sm:h-[400px] group">
+            <div
+              className="relative w-full h-[280px] sm:h-[400px] group touch-pan-y"
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            >
               <img
                 src={images[activeImg]}
                 alt=""
@@ -135,14 +157,16 @@ export default function TreeDetail() {
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); setActiveImg((prev) => (prev - 1 + images.length) % images.length); }}
-                className="absolute left-4 top-1/2 -translate-y-1/2 z-20 p-2 bg-white/80 hover:bg-white text-gray-800 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
+                aria-label="Previous photo"
+                className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 z-20 p-2 bg-white/80 hover:bg-white text-gray-800 rounded-full shadow-md sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
               </button>
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); setActiveImg((prev) => (prev + 1) % images.length); }}
-                className="absolute right-4 top-1/2 -translate-y-1/2 z-20 p-2 bg-white/80 hover:bg-white text-gray-800 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
+                aria-label="Next photo"
+                className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 z-20 p-2 bg-white/80 hover:bg-white text-gray-800 rounded-full shadow-md sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
               </button>

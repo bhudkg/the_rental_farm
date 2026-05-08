@@ -33,7 +33,6 @@ export default function Trees() {
   const [trees, setTrees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState('list');
-  const [cardVariant, setCardVariant] = useState('B');
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [filterOptions, setFilterOptions] = useState({ locations: [], types: [], varieties: [] });
 
@@ -241,51 +240,60 @@ export default function Trees() {
 
   return (
     <div>
-      {/* Category bar */}
-      <section className="bg-white border-b border-gray-200 sticky top-16 z-40">
-        <div className="max-w-7xl mx-auto px-2 sm:px-4">
+      {/* Category chips */}
+      <section className="bg-paper border-b border-line sticky top-16 lg:top-[72px] z-40 backdrop-blur-md">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
           <div
             ref={scrollRef}
-            className="flex items-center gap-1 overflow-x-auto py-3"
+            className="flex items-center gap-2 overflow-x-auto py-3"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
-            {CATEGORIES.map((cat) => (
-              <button
-                key={cat.label}
-                onClick={() => setType(cat.type)}
-                className={`flex flex-col items-center gap-1 px-3 py-1.5 min-w-[72px] rounded-lg transition-all shrink-0 ${
-                  activeType === cat.type ? 'bg-primary/5' : 'hover:bg-gray-50'
-                }`}
-              >
-                <img src={cat.img} alt={cat.label} className="w-9 h-9 object-contain" loading="lazy" />
-                <span className={`text-[11px] font-semibold whitespace-nowrap leading-tight ${activeType === cat.type ? 'text-primary' : 'text-gray-600'}`}>
-                  {cat.label}
-                </span>
-                {activeType === cat.type && <div className="w-6 h-0.5 bg-primary rounded-full" />}
-              </button>
-            ))}
+            {CATEGORIES.map((cat) => {
+              const active = activeType === cat.type;
+              return (
+                <button
+                  key={cat.label}
+                  onClick={() => setType(cat.type)}
+                  className={`shrink-0 group flex items-center gap-2 pl-1.5 pr-3.5 py-1.5 rounded-full transition-all border ${
+                    active
+                      ? 'bg-primary text-cream border-primary shadow-soft'
+                      : 'bg-cream text-ink border-line hover:border-primary/30 hover:bg-cream-dark'
+                  }`}
+                >
+                  <span className={`w-7 h-7 rounded-full flex items-center justify-center ${active ? 'bg-cream' : 'bg-paper border border-line'}`}>
+                    <img src={cat.img} alt="" className="w-5 h-5 object-contain" loading="lazy" />
+                  </span>
+                  <span className="text-sm font-semibold whitespace-nowrap">{cat.label}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
       </section>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
         {/* Header */}
-        <div className="flex items-center justify-between mb-5">
+        <div className="flex items-end justify-between mb-6 gap-4 flex-wrap">
           <div>
-            <h1 className="text-xl md:text-2xl font-bold text-gray-900">
-              {activeType ? `${activeType.charAt(0).toUpperCase() + activeType.slice(1)} Trees` : 'Browse Fruit Trees'}
+            <p className="text-[11px] uppercase tracking-[0.18em] text-accent font-bold mb-2">
+              {activeType ? activeType : 'Marketplace'}
+            </p>
+            <h1 className="font-display text-3xl sm:text-4xl font-semibold text-ink leading-tight">
+              {activeType
+                ? <>Fresh <span className="font-display-italic text-primary">{activeType}</span> trees</>
+                : <>Browse the <span className="font-display-italic text-primary">orchard</span></>}
             </h1>
-            <p className="text-gray-400 text-sm mt-0.5">{trees.length} trees available for rent</p>
+            <p className="text-ink-muted text-sm mt-1.5">{trees.length} trees ready for the season</p>
           </div>
           <div className="flex items-center gap-2.5">
             {/* View toggle */}
-            <div className="flex items-center bg-gray-100 rounded-xl p-1 gap-1">
+            <div className="flex items-center bg-paper border border-line rounded-full p-1 gap-1">
               <button
                 onClick={() => setViewMode('list')}
-                className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all ${
+                className={`inline-flex items-center gap-1.5 px-3.5 h-8 rounded-full text-xs font-semibold transition-all ${
                   viewMode === 'list'
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700'
+                    ? 'bg-primary text-cream shadow-sm'
+                    : 'text-ink-soft hover:text-ink'
                 }`}
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -295,10 +303,10 @@ export default function Trees() {
               </button>
               <button
                 onClick={() => setViewMode('map')}
-                className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all ${
+                className={`inline-flex items-center gap-1.5 px-3.5 h-8 rounded-full text-xs font-semibold transition-all ${
                   viewMode === 'map'
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700'
+                    ? 'bg-primary text-cream shadow-sm'
+                    : 'text-ink-soft hover:text-ink'
                 }`}
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -308,28 +316,13 @@ export default function Trees() {
                 Map
               </button>
             </div>
-            <div className="hidden lg:block h-6 w-px bg-gray-200" />
+            <div className="hidden lg:block h-6 w-px bg-line" />
             <div className="hidden lg:flex items-center gap-2">
-              <div className="flex items-center bg-gray-100 rounded-lg p-0.5 gap-0.5">
-                {['A', 'B', 'C'].map((v) => (
-                  <button
-                    key={v}
-                    onClick={() => setCardVariant(v)}
-                    className={`px-2.5 py-1.5 rounded-md text-[11px] font-semibold transition-all ${
-                      cardVariant === v
-                        ? 'bg-white text-gray-900 shadow-sm'
-                        : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    {v}
-                  </button>
-                ))}
-              </div>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-700 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none cursor-pointer hover:border-gray-300 transition-colors appearance-none pr-8"
-                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' viewBox='0 0 24 24' stroke='%239ca3af' stroke-width='2.5'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19.5 8.25l-7.5 7.5-7.5-7.5'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center' }}
+                className="px-4 h-10 bg-paper border border-line rounded-full text-xs font-semibold text-ink focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none cursor-pointer hover:border-ink/30 transition-colors appearance-none pr-9"
+                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' viewBox='0 0 24 24' stroke='%23344035' stroke-width='2.5'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19.5 8.25l-7.5 7.5-7.5-7.5'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
               >
                 {SORT_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>Sort: {opt.label}</option>
@@ -420,9 +413,9 @@ export default function Trees() {
               />
             ) : (
               <>
-                <div className={`grid gap-4 ${cardVariant === 'A' ? 'grid-cols-2 sm:grid-cols-2 lg:grid-cols-4' : 'grid-cols-2 sm:grid-cols-2 lg:grid-cols-3'}`}>
+                <div className="grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                   {paginatedTrees.map((tree) => (
-                    <TreeCard key={tree.id} tree={tree} variant={cardVariant} />
+                    <TreeCard key={tree.id} tree={tree} />
                   ))}
                 </div>
 

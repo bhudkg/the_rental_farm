@@ -3,19 +3,21 @@ import { Link } from 'react-router-dom';
 
 const VARIANTS = {
   primary:
-    'bg-primary text-white hover:bg-primary-dark active:bg-primary-dark shadow-sm hover:shadow-md focus-visible:ring-primary/40',
+    'bg-primary text-cream hover:bg-primary-dark active:bg-primary-dark shadow-soft hover:shadow-card focus-visible:ring-primary/40',
   gradient:
-    'bg-linear-to-r from-primary to-emerald-600 text-white hover:brightness-105 shadow-md hover:shadow-lg focus-visible:ring-primary/40',
+    'bg-linear-to-br from-primary via-primary to-primary-dark text-cream hover:brightness-110 shadow-card hover:shadow-pop focus-visible:ring-primary/40',
+  accent:
+    'bg-accent text-cream hover:bg-accent-dark shadow-soft hover:shadow-card focus-visible:ring-accent/40',
   secondary:
-    'bg-white text-gray-800 border border-gray-200 hover:bg-gray-50 hover:border-gray-300 focus-visible:ring-gray-300',
+    'bg-paper text-ink border border-line hover:border-ink/30 hover:bg-cream-dark focus-visible:ring-ink/20',
   ghost:
-    'bg-transparent text-gray-700 hover:bg-gray-100 focus-visible:ring-gray-300',
+    'bg-transparent text-ink hover:bg-primary-soft focus-visible:ring-primary/30',
   outline:
-    'bg-transparent text-primary border border-primary/40 hover:bg-primary/5 hover:border-primary focus-visible:ring-primary/30',
+    'bg-transparent text-primary border border-primary/40 hover:bg-primary-soft hover:border-primary focus-visible:ring-primary/30',
   danger:
     'bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-500/40 shadow-sm',
   subtle:
-    'bg-primary/10 text-primary hover:bg-primary/15 focus-visible:ring-primary/30',
+    'bg-primary-soft text-primary hover:bg-primary-light focus-visible:ring-primary/30',
 };
 
 const SIZES = {
@@ -26,9 +28,9 @@ const SIZES = {
 };
 
 const BASE =
-  'inline-flex items-center justify-center font-semibold rounded-xl ' +
+  'inline-flex items-center justify-center font-semibold rounded-full ' +
   'transition-all duration-200 ease-out ' +
-  'focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-white ' +
+  'focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-cream ' +
   'disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none ' +
   'select-none whitespace-nowrap';
 

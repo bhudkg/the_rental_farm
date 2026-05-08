@@ -172,7 +172,7 @@ export default function Login() {
               onError={() => setError('Google sign-in failed')}
               text={isRegister ? 'signup_with' : 'signin_with'}
               shape="rectangular"
-              width="100%"
+              size="large"
             />
           </div>
         </form>

@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 import crud
 from auth_utils import get_current_user, require_user
 from database import get_db
-from models import OwnerProfile, OwnerRating, Tree, TreeView, User
+from models import Order, OwnerProfile, OwnerRating, Tree, TreeView, User
 from schemas import TreeCreate, TreeDetailOut, TreeOut, TreeUpdate
 
 router = APIRouter(prefix="/api/trees", tags=["trees"])
@@ -167,4 +167,7 @@ def delete_tree(
         raise HTTPException(status_code=404, detail="Tree not found")
     if tree.owner_id and tree.owner_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not your tree")
+    has_order = db.query(Order.id).filter(Order.tree_id == tree.id).first() is not None
+    if has_order:
+        raise HTTPException(status_code=400, detail="Cannot delete tree with existing orders")
     crud.delete_tree(db, tree)

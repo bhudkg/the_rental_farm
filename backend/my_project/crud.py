@@ -4,7 +4,7 @@ import uuid
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from models import Notification, Order, OrderStatusLog, OrderUpdate, OwnerRating, Tree, TreeTrendingScore, User, Wishlist
+from models import Notification, Order, OrderStatusLog, OrderUpdate, OwnerRating, Tree, TreeTrendingScore, TreeView, User, Wishlist
 
 _EARTH_RADIUS_KM = 6371.0
 
@@ -238,6 +238,10 @@ def update_tree(db: Session, tree: Tree, data: dict) -> Tree:
 
 
 def delete_tree(db: Session, tree: Tree) -> None:
+    # Drop dependent rows that have no ON DELETE CASCADE on their FK.
+    db.query(Wishlist).filter(Wishlist.tree_id == tree.id).delete(synchronize_session=False)
+    db.query(TreeView).filter(TreeView.tree_id == tree.id).delete(synchronize_session=False)
+    db.query(TreeTrendingScore).filter(TreeTrendingScore.tree_id == tree.id).delete(synchronize_session=False)
     db.delete(tree)
     db.commit()
 

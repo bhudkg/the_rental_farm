@@ -35,8 +35,8 @@ export default function EditTree() {
             ? [tree.image_url]
             : [];
         setForm({
-          name: tree.name,
-          type: tree.type,
+          name: tree.name || '',
+          type: tree.type || TYPES[0],
           variety: tree.variety || '',
           description: tree.description || '',
           location: tree.location || '',
@@ -48,14 +48,32 @@ export default function EditTree() {
           price_per_season: tree.price_per_season || '',
           season_start: tree.season_start || '',
           season_end: tree.season_end || '',
-          size: tree.size || 'Medium (3-4 ft)',
+          size: SIZES.includes(tree.size) ? tree.size : SIZES[1],
           image_urls: urls,
         });
+      })
+      .catch((err) => {
+        // eslint-disable-next-line no-console
+        console.error('Failed to load tree for edit:', err);
+        setError(err?.response?.data?.detail || err?.message || 'Failed to load tree');
       })
       .finally(() => setLoading(false));
   }, [id]);
 
-  if (loading || !form) {
+  const handleLocationChange = useCallback(({ latitude, longitude }) => {
+    setForm((prev) => (prev ? { ...prev, latitude, longitude } : prev));
+  }, []);
+
+  const handleAddressChange = useCallback(({ city, state, area }) => {
+    setForm((prev) => (prev ? {
+      ...prev,
+      city: city || prev.city,
+      state: state || prev.state,
+      location: area || prev.location,
+    } : prev));
+  }, []);
+
+  if (loading) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-10">
         <div className="animate-pulse space-y-4">
@@ -66,20 +84,23 @@ export default function EditTree() {
     );
   }
 
+  if (!form) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-10">
+        <Link to="/owner/trees" className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-6">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+          Back to my trees
+        </Link>
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error || 'Could not load this tree.'}
+        </div>
+      </div>
+    );
+  }
+
   const update = (field) => (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }));
-
-  const handleLocationChange = useCallback(({ latitude, longitude }) => {
-    setForm((prev) => ({ ...prev, latitude, longitude }));
-  }, []);
-
-  const handleAddressChange = useCallback(({ city, state, area }) => {
-    setForm((prev) => ({
-      ...prev,
-      city: city || prev.city,
-      state: state || prev.state,
-      location: area || prev.location,
-    }));
-  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

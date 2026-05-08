@@ -4,27 +4,8 @@ import { toggleWishlist } from '../services/api';
 import useStore from '../store/useStore';
 import { PLACEHOLDER_TREE_IMG } from '../constants/images';
 
-const TYPE_COLORS = {
-  mango: 'bg-yellow-100 text-yellow-700',
-  banana: 'bg-yellow-50 text-yellow-600',
-  orange: 'bg-orange-100 text-orange-700',
-  lemon: 'bg-lime-100 text-lime-700',
-  coconut: 'bg-amber-100 text-amber-700',
-  guava: 'bg-green-100 text-green-700',
-  grapes: 'bg-purple-100 text-purple-700',
-  apple: 'bg-red-100 text-red-700',
-  papaya: 'bg-orange-50 text-orange-600',
-  pomegranate: 'bg-rose-100 text-rose-700',
-  jackfruit: 'bg-emerald-100 text-emerald-700',
-  chiku: 'bg-amber-50 text-amber-600',
-};
-
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-function seasonLabel(tree) {
-  if (!tree.season_start || !tree.season_end) return null;
-  return `${MONTHS[tree.season_start - 1]} – ${MONTHS[tree.season_end - 1]}`;
-}
+const MONTHS = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
+const TRENDING_THRESHOLD = 5.0;
 
 function imgSrc(tree) {
   return tree.image_urls?.[0] || tree.image_url || PLACEHOLDER_TREE_IMG;
@@ -35,6 +16,17 @@ function priceText(tree) {
   return `₹${tree.price_per_season.toLocaleString('en-IN')}`;
 }
 
+function inSeason(tree, monthIdx) {
+  if (!tree.season_start || !tree.season_end) return false;
+  const start = tree.season_start - 1;
+  const end = tree.season_end - 1;
+  // Wrap-around season (e.g. Nov → Feb)
+  if (start <= end) return monthIdx >= start && monthIdx <= end;
+  return monthIdx >= start || monthIdx <= end;
+}
+
+/* ── Wishlist heart ────────────────────────────────── */
+
 function useWishlist(tree) {
   const user = useStore((s) => s.user);
   const override = useStore((s) => s.wishlistOverrides[tree.id]);
@@ -42,14 +34,12 @@ function useWishlist(tree) {
 
   const wishlisted = override ? override.wishlisted : !!tree.is_wishlisted;
   const count = override ? override.count : (tree.wishlist_count || 0);
-
   const [busy, setBusy] = useState(false);
 
   const toggle = async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!user) return;
-    if (busy) return;
+    if (!user || busy) return;
 
     const newWishlisted = !wishlisted;
     const newCount = newWishlisted ? count + 1 : Math.max(0, count - 1);
@@ -69,25 +59,26 @@ function useWishlist(tree) {
   return { wishlisted, count, toggle, loggedIn: !!user };
 }
 
-function WishlistButton({ tree, className = '' }) {
-  const { wishlisted, count, toggle, loggedIn } = useWishlist(tree);
+function HeartButton({ tree }) {
+  const { wishlisted, toggle, loggedIn } = useWishlist(tree);
 
   return (
     <button
       onClick={toggle}
-      className={`flex items-center gap-1 ${className}`}
-      title={loggedIn ? (wishlisted ? 'Remove from wishlist' : 'Add to wishlist') : 'Login to wishlist'}
       disabled={!loggedIn}
+      title={loggedIn ? (wishlisted ? 'Remove from wishlist' : 'Save to wishlist') : 'Sign in to save'}
+      className={`absolute top-3 right-3 z-10 w-9 h-9 rounded-full flex items-center justify-center bg-paper/95 backdrop-blur-sm shadow-soft ring-1 ring-line transition-all duration-200 hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+        loggedIn ? 'cursor-pointer' : 'cursor-not-allowed opacity-80'
+      }`}
+      aria-label={wishlisted ? 'Saved' : 'Save'}
     >
       <svg
-        className={`w-5 h-5 transition-colors duration-200 ${
-          wishlisted
-            ? 'text-red-500 fill-red-500'
-            : 'text-gray-400 fill-none hover:text-red-400'
-        } ${!loggedIn ? 'opacity-50' : 'cursor-pointer'}`}
+        className={`w-4 h-4 transition-colors ${
+          wishlisted ? 'text-accent fill-accent' : 'text-ink-soft fill-none'
+        }`}
         viewBox="0 0 24 24"
         stroke="currentColor"
-        strokeWidth={1.5}
+        strokeWidth={1.8}
       >
         <path
           strokeLinecap="round"
@@ -95,317 +86,188 @@ function WishlistButton({ tree, className = '' }) {
           d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"
         />
       </svg>
-      {count > 0 && (
-        <span className="text-[10px] font-semibold text-gray-500">{count}</span>
-      )}
     </button>
   );
 }
 
-function OwnerRatingBadge({ tree }) {
+/* ── Trending pill ─────────────────────────────────── */
+
+function TrendingPill({ tree }) {
+  if (!tree.trending_score || tree.trending_score < TRENDING_THRESHOLD) return null;
+  return (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-ink text-cream text-[10px] font-bold tracking-[0.14em] uppercase shadow-sm ring-1 ring-[color:var(--color-gold)]/60">
+      <svg className="w-2.5 h-2.5 text-[color:var(--color-gold-bright)]" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 23c-3.866 0-7-2.686-7-6 0-1.665.602-3.202 1.604-4.396L12 2l5.396 10.604C18.398 13.798 19 15.335 19 17c0 3.314-3.134 6-7 6z" />
+      </svg>
+      <span className="text-gold-foil">Coveted</span>
+    </span>
+  );
+}
+
+/* ── Season strip — 12-dot mini calendar ───────────── */
+
+function SeasonStrip({ tree }) {
+  if (!tree.season_start || !tree.season_end) return null;
+  return (
+    <div className="flex items-center gap-1">
+      <span className="text-[10px] uppercase tracking-wider text-ink-muted font-semibold mr-1">
+        Season
+      </span>
+      <div className="flex items-center gap-[2px]">
+        {MONTHS.map((m, i) => {
+          const active = inSeason(tree, i);
+          return (
+            <span
+              key={i}
+              className={`w-[7px] h-[7px] rounded-full ${
+                active ? 'bg-accent' : 'bg-line'
+              }`}
+              title={active ? 'In fruiting season' : ''}
+              aria-hidden="true"
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ── Owner / rating chip ───────────────────────────── */
+
+function OwnerChip({ tree }) {
   const hasRating = tree.owner_avg_rating != null && tree.owner_avg_rating > 0;
   return (
-    <span className="inline-flex items-center gap-0.5 text-[11px] text-gray-600">
-      <svg className={`w-3.5 h-3.5 ${hasRating ? 'text-amber-400 fill-amber-400' : 'text-gray-300 fill-gray-300'}`} viewBox="0 0 20 20">
+    <span className="inline-flex items-center gap-1 text-[11px] text-ink-soft font-medium">
+      <svg
+        className={`w-3.5 h-3.5 ${hasRating ? 'text-harvest fill-[color:var(--color-harvest)]' : 'text-line fill-line'}`}
+        viewBox="0 0 20 20"
+      >
         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
       </svg>
       {hasRating ? (
-        <>
-          <span className="font-semibold">{tree.owner_avg_rating}</span>
-          <span className="text-gray-400">({tree.owner_rating_count})</span>
-        </>
+        <span className="font-tabular font-semibold text-ink">
+          {Number(tree.owner_avg_rating).toFixed(1)}
+          <span className="text-ink-muted font-normal"> ({tree.owner_rating_count})</span>
+        </span>
       ) : (
-        <span className="text-gray-400">New</span>
+        <span className="text-ink-muted">New farmer</span>
       )}
     </span>
   );
 }
 
-const TRENDING_THRESHOLD = 5.0;
+/* ── Default canonical TreeCard ────────────────────── */
 
-function TrendingBadge({ tree }) {
-  if (!tree.trending_score || tree.trending_score < TRENDING_THRESHOLD) return null;
-  return (
-    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-orange-500/90 backdrop-blur-sm text-white text-[9px] font-bold shadow-sm">
-      <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M12 23c-3.866 0-7-2.686-7-6 0-1.665.602-3.202 1.604-4.396L12 2l5.396 10.604C18.398 13.798 19 15.335 19 17c0 3.314-3.134 6-7 6z" />
-      </svg>
-      Trending
-    </span>
-  );
-}
-
-// ─── Option A: Airbnb-style (Clean & Minimal) ───────────────────────────────
-
-export function TreeCardA({ tree }) {
-  const season = seasonLabel(tree);
+export default function TreeCard({ tree }) {
   const price = priceText(tree);
+  const location = [tree.city, tree.state].filter(Boolean).join(', ');
+  const inStock = tree.available_quantity == null || tree.available_quantity > 0;
 
   return (
     <Link
       to={`/trees/${tree.id}`}
-      className="group block"
+      className="group relative block focus:outline-none"
     >
-      <div className="aspect-4/3 overflow-hidden rounded-xl bg-gray-100 relative">
-        <img
-          src={imgSrc(tree)}
-          alt={tree.name}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          loading="lazy"
-          onError={(e) => { e.target.src = PLACEHOLDER_TREE_IMG; }}
+      <article className="relative bg-paper rounded-3xl ring-1 ring-line overflow-hidden shadow-soft transition-all duration-300 group-hover:shadow-pop group-hover:-translate-y-1 group-hover:ring-[color:var(--color-gold)]/45 group-focus-visible:ring-2 group-focus-visible:ring-primary/40">
+        {/* Gold corner mark — appears on hover */}
+        <span
+          aria-hidden="true"
+          className="absolute top-3.5 right-3.5 z-20 w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+          style={{
+            background:
+              'conic-gradient(from 90deg at 100% 0%, transparent 0deg 90deg, var(--color-gold) 90deg 91deg, transparent 91deg)',
+          }}
         />
-        <div className="absolute top-2 right-2 z-10">
-          <WishlistButton tree={tree} className="bg-white/80 backdrop-blur-sm rounded-full p-1.5 shadow-sm hover:bg-white transition-colors" />
-        </div>
-      </div>
-
-      <div className="mt-2.5">
-        <div className="flex items-start justify-between gap-2">
-          <h3 className="text-sm font-semibold text-gray-900 line-clamp-1 group-hover:text-primary transition-colors">
-            {tree.name}
-          </h3>
-          {price && (
-            <span className="text-sm font-bold text-gray-900 whitespace-nowrap shrink-0">
-              {price}
-            </span>
-          )}
-        </div>
-
-        {(tree.city || tree.state) && (
-          <p className="text-[12px] text-gray-500 mt-0.5">
-            {[tree.city, tree.state].filter(Boolean).join(', ')}
-          </p>
-        )}
-
-        <div className="flex flex-wrap items-center gap-1.5 mt-2">
-          <OwnerRatingBadge tree={tree} />
-          <TrendingBadge tree={tree} />
-          {season && (
-            <span className="text-[10px] font-medium text-gray-600 bg-orange-50 px-1.5 py-0.5 rounded-md">
-              {season}
-            </span>
-          )}
-          {tree.age != null && (
-            <span className="text-[10px] font-medium text-gray-600 bg-green-50 px-1.5 py-0.5 rounded-md">
-              {tree.age} yrs
-            </span>
-          )}
-          {tree.size && (
-            <span className="text-[10px] font-medium text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded-md">
-              {tree.size}
-            </span>
-          )}
-        </div>
-
-        {price && (
-          <p className="text-[11px] text-gray-400 mt-1">per season</p>
-        )}
-      </div>
-    </Link>
-  );
-}
-
-// ─── Option B: Property-listing (Info Grid) ──────────────────────────────────
-
-export function TreeCardB({ tree }) {
-  const season = seasonLabel(tree);
-  const price = priceText(tree);
-
-  const stats = [
-    season && { icon: 'sun', label: 'Season', value: season },
-    tree.age != null && { icon: 'calendar', label: 'Age', value: `${tree.age} yrs` },
-    tree.previous_year_yield != null && { icon: 'yield', label: 'Yield', value: `${tree.previous_year_yield} kg` },
-    tree.size && { icon: 'size', label: 'Size', value: tree.size },
-  ].filter(Boolean);
-
-  return (
-    <Link
-      to={`/trees/${tree.id}`}
-      className="group bg-white rounded-2xl overflow-hidden border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
-    >
-      <div className="aspect-4/3 overflow-hidden bg-gray-100 relative">
-        <img
-          src={imgSrc(tree)}
-          alt={tree.name}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          loading="lazy"
-          onError={(e) => { e.target.src = PLACEHOLDER_TREE_IMG; }}
-        />
-        <div className="absolute top-2.5 left-2.5 z-10">
-          <WishlistButton tree={tree} className="bg-white/80 backdrop-blur-sm rounded-full p-1.5 shadow-sm hover:bg-white transition-colors" />
-        </div>
-        {price && (
-          <div className="absolute top-2.5 right-2.5 bg-white/90 backdrop-blur-sm text-xs font-bold text-primary px-2.5 py-1 rounded-lg shadow-sm">
-            {price}/season
+        {/* Image */}
+        <div className="relative">
+          <div className="aspect-[4/3] overflow-hidden bg-cream-dark">
+            <img
+              src={imgSrc(tree)}
+              alt={tree.name}
+              loading="lazy"
+              onError={(e) => { e.currentTarget.src = PLACEHOLDER_TREE_IMG; }}
+              className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.06]"
+            />
           </div>
-        )}
-      </div>
 
-      <div className="p-3.5">
-        <div className="flex items-center gap-2 mb-1.5">
-          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full capitalize ${TYPE_COLORS[tree.type] || 'bg-gray-100 text-gray-600'}`}>
-            {tree.type}
-          </span>
-          <TrendingBadge tree={tree} />
-          <OwnerRatingBadge tree={tree} />
+          {/* Subtle bottom fade for legibility */}
+          <div className="absolute inset-x-0 bottom-0 h-20 bg-linear-to-t from-ink/40 to-transparent pointer-events-none" />
+
+          {/* Top-left overlays */}
+          <div className="absolute top-3 left-3 flex items-center gap-1.5">
+            <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-paper/95 backdrop-blur-sm text-[11px] font-semibold text-ink ring-1 ring-line capitalize">
+              {tree.type}
+            </span>
+            <TrendingPill tree={tree} />
+          </div>
+
+          {/* Heart */}
+          <HeartButton tree={tree} />
+
+          {/* Type / variety on bottom-left */}
           {tree.variety && (
-            <span className="text-[10px] text-gray-400 font-medium truncate">{tree.variety}</span>
+            <span className="absolute bottom-3 left-3 text-[11px] font-medium text-cream/90 tracking-wide">
+              {tree.variety}
+            </span>
+          )}
+
+          {!inStock && (
+            <div className="absolute inset-0 bg-paper/65 backdrop-blur-[1px] flex items-center justify-center">
+              <span className="px-3 py-1.5 rounded-full bg-ink text-cream text-xs font-semibold uppercase tracking-wider">
+                Booked for the season
+              </span>
+            </div>
           )}
         </div>
 
-        <h3 className="text-sm font-bold text-gray-900 mb-0.5 group-hover:text-primary transition-colors line-clamp-1">
-          {tree.name}
-        </h3>
+        {/* Body */}
+        <div className="p-4 sm:p-5 space-y-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h3 className="font-display text-[19px] leading-tight font-semibold text-ink truncate group-hover:text-primary transition-colors">
+                {tree.name}
+              </h3>
+              {location && (
+                <p className="flex items-center gap-1 text-[12px] text-ink-muted mt-0.5">
+                  <svg className="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                  </svg>
+                  <span className="truncate">{location}</span>
+                </p>
+              )}
+            </div>
 
-        {(tree.city || tree.state) && (
-          <div className="flex items-center gap-1 mb-2.5">
-            <svg className="w-3 h-3 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
-            </svg>
-            <span className="text-[11px] text-gray-500 truncate">
-              {[tree.city, tree.state].filter(Boolean).join(', ')}
-            </span>
-          </div>
-        )}
-
-        {stats.length > 0 && (
-          <div className="grid grid-cols-2 gap-x-3 gap-y-2 pt-2.5 border-t border-gray-100">
-            {stats.map((s) => (
-              <div key={s.label} className="flex items-center gap-1.5">
-                <StatIcon type={s.icon} />
-                <div className="min-w-0">
-                  <p className="text-[9px] text-gray-400 uppercase tracking-wider leading-none">{s.label}</p>
-                  <p className="text-[11px] font-semibold text-gray-700 truncate">{s.value}</p>
-                </div>
+            {price && (
+              <div className="text-right shrink-0">
+                <p className="font-display font-tabular text-[22px] leading-none font-semibold text-primary">{price}</p>
+                <p className="text-[10px] uppercase tracking-[0.18em] text-ink-muted mt-1 font-semibold">/ season</p>
               </div>
-            ))}
+            )}
           </div>
-        )}
-      </div>
+
+          <SeasonStrip tree={tree} />
+
+          <div className="relative flex items-center justify-between pt-3">
+            <span aria-hidden="true" className="absolute left-0 right-0 top-0 h-px rule-gold opacity-60" />
+            <OwnerChip tree={tree} />
+            {tree.previous_year_yield != null && (
+              <span className="inline-flex items-center gap-1 text-[11px] text-ink-soft font-medium">
+                <svg className="w-3.5 h-3.5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 21c-2.485 0-4.5-2.015-4.5-4.5 0-1.5 1.5-3.5 4.5-7.5 3 4 4.5 6 4.5 7.5 0 2.485-2.015 4.5-4.5 4.5z" />
+                </svg>
+                <span className="font-tabular font-semibold">{tree.previous_year_yield} kg</span>
+                <span className="text-ink-muted">last yr</span>
+              </span>
+            )}
+          </div>
+        </div>
+      </article>
     </Link>
   );
 }
 
-function StatIcon({ type }) {
-  const cls = "w-3.5 h-3.5 shrink-0";
-  switch (type) {
-    case 'sun':
-      return (
-        <svg className={`${cls} text-orange-400`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-2.25l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
-        </svg>
-      );
-    case 'calendar':
-      return (
-        <svg className={`${cls} text-blue-400`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-        </svg>
-      );
-    case 'yield':
-      return (
-        <svg className={`${cls} text-emerald-500`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v17.25m0 0c-1.472 0-2.882.265-4.185.75M12 20.25c1.472 0 2.882.265 4.185.75M18.75 4.97A48.416 48.416 0 0012 4.5c-2.291 0-4.545.16-6.75.47m13.5 0c1.01.143 2.01.317 3 .52m-3-.52l2.62 10.726c.122.499-.106 1.028-.589 1.202a5.988 5.988 0 01-2.031.352 5.988 5.988 0 01-2.031-.352c-.483-.174-.711-.703-.59-1.202L18.75 4.971zm-16.5.52c.99-.203 1.99-.377 3-.52m0 0l2.62 10.726c.122.499-.106 1.028-.589 1.202a5.989 5.989 0 01-2.031.352 5.989 5.989 0 01-2.031-.352c-.483-.174-.711-.703-.59-1.202L5.25 4.971z" />
-        </svg>
-      );
-    case 'size':
-      return (
-        <svg className={`${cls} text-violet-400`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
-        </svg>
-      );
-    default:
-      return null;
-  }
-}
-
-// ─── Option C: Compact Info-dense (Stats Bar) ────────────────────────────────
-
-export function TreeCardC({ tree }) {
-  const season = seasonLabel(tree);
-  const price = priceText(tree);
-
-  const statItems = [
-    season && { label: 'Season', value: season },
-    tree.age != null && { label: 'Age', value: `${tree.age}y` },
-    tree.previous_year_yield != null && { label: 'Yield', value: `${tree.previous_year_yield}kg` },
-    tree.size && { label: 'Size', value: tree.size },
-  ].filter(Boolean);
-
-  return (
-    <Link
-      to={`/trees/${tree.id}`}
-      className="group bg-white rounded-2xl overflow-hidden border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
-    >
-      <div className="aspect-4/3 overflow-hidden bg-gray-100 relative">
-        <img
-          src={imgSrc(tree)}
-          alt={tree.name}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          loading="lazy"
-          onError={(e) => { e.target.src = PLACEHOLDER_TREE_IMG; }}
-        />
-        <div className="absolute top-2.5 right-2.5 z-10">
-          <WishlistButton tree={tree} className="bg-white/80 backdrop-blur-sm rounded-full p-1.5 shadow-sm hover:bg-white transition-colors" />
-        </div>
-        <span className={`absolute bottom-2.5 left-2.5 text-[10px] font-bold px-2 py-0.5 rounded-full capitalize backdrop-blur-sm ${TYPE_COLORS[tree.type] || 'bg-gray-100 text-gray-600'}`}>
-          {tree.type}
-        </span>
-      </div>
-
-      <div className="p-3.5">
-        <div className="flex items-center gap-1.5 mb-0.5">
-          <h3 className="text-sm font-bold text-gray-900 group-hover:text-primary transition-colors line-clamp-1">
-            {tree.name}
-          </h3>
-          <TrendingBadge tree={tree} />
-          <OwnerRatingBadge tree={tree} />
-          {tree.variety && (
-            <span className="text-[11px] text-gray-400 shrink-0">&middot; {tree.variety}</span>
-          )}
-        </div>
-
-        {(tree.city || tree.state) && (
-          <div className="flex items-center gap-1 mb-2.5">
-            <svg className="w-3 h-3 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
-            </svg>
-            <span className="text-[11px] text-gray-500 truncate">
-              {[tree.city, tree.state].filter(Boolean).join(', ')}
-            </span>
-          </div>
-        )}
-
-        {statItems.length > 0 && (
-          <div className="flex items-stretch rounded-lg bg-gray-50 border border-gray-100 overflow-hidden mb-3">
-            {statItems.map((s, i) => (
-              <div key={s.label} className={`flex-1 text-center py-1.5 px-1 ${i > 0 ? 'border-l border-gray-200' : ''}`}>
-                <p className="text-[8px] text-gray-400 uppercase tracking-wider leading-none mb-0.5">{s.label}</p>
-                <p className="text-[10px] font-bold text-gray-700 truncate">{s.value}</p>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {price && (
-          <div className="flex items-baseline gap-1">
-            <span className="text-base font-bold text-gray-900">{price}</span>
-            <span className="text-[11px] text-gray-400">/season</span>
-          </div>
-        )}
-      </div>
-    </Link>
-  );
-}
-
-// ─── Default export (backwards-compatible, uses Option B as default) ─────────
-
-export default function TreeCard({ tree, variant = 'B' }) {
-  switch (variant) {
-    case 'A': return <TreeCardA tree={tree} />;
-    case 'C': return <TreeCardC tree={tree} />;
-    case 'B':
-    default:  return <TreeCardB tree={tree} />;
-  }
-}
+/* Backwards-compatible variant exports — all map to canonical now */
+export const TreeCardA = TreeCard;
+export const TreeCardB = TreeCard;
+export const TreeCardC = TreeCard;
